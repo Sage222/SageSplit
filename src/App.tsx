@@ -391,7 +391,7 @@ export default function App() {
           {/* Brand Header */}
           <div className="px-6 py-5 border-b border-slate-200">
             <div className="text-lg font-bold tracking-tight text-slate-900 whitespace-nowrap">
-              SplitDock
+              SageSplit
             </div>
             <div className="text-xs text-slate-500 mt-0.5 truncate">
               {settings.workspaceName}

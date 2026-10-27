@@ -74,11 +74,11 @@ const CURRENCY_OPTIONS = [
 ];
 
 const DOCKER_COMPOSE_SNIPPET = `services:
-  splitdock:
+  sagesplit:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: splitdock-ledger
+    container_name: sagesplit
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -87,10 +87,10 @@ const DOCKER_COMPOSE_SNIPPET = `services:
       - PORT=3000
       - DATA_DIR=/app/data
     volumes:
-      - splitdock_data:/app/data
+      - sagesplit_data:/app/data
 
 volumes:
-  splitdock_data:
+  sagesplit_data:
     driver: local`;
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -245,7 +245,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `splitdock-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `sagesplit-backup-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };

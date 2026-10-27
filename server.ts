@@ -500,7 +500,7 @@ async function startServer() {
   app.get('/api/health', (_req, res) => {
     res.json({
       status: 'ok',
-      container: 'splitdock-ledger',
+      container: 'sagesplit',
       uptimeSeconds: Math.floor(process.uptime()),
       storagePath: DATA_FILE,
       counts: {
@@ -1160,7 +1160,7 @@ async function startServer() {
   }
 
   httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`SplitDock server listening on http://0.0.0.0:${PORT}`);
+    console.log(`SageSplit server listening on http://0.0.0.0:${PORT}`);
   });
 }
 
