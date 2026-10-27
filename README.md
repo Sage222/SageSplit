@@ -39,7 +39,7 @@ docker compose up -d --build
 2. Open **SageSplit** in your browser:
 
 ```text
-http://localhost:3000
+http://localhost:3044
 ```
 
 3. Check container health and logs:
@@ -78,7 +78,7 @@ Out of the box, SageSplit seeds a sample ledger with an Admin account and three 
 # Install dependencies
 npm install
 
-# Start development server (Express + WebSocket + Vite on port 3000)
+# Start development server
 npm run dev
 
 # Build production bundle
@@ -94,6 +94,6 @@ npm run start
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `PORT` | `3000` | HTTP & WebSocket listening port |
+| `PORT` | `3044` | HTTP & WebSocket listening port in Docker |
 | `NODE_ENV` | `production` | Runtime environment (`development` or `production`) |
 | `DATA_DIR` | `/app/data` | Directory where `ledger-store.json` is persisted |

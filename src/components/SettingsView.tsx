@@ -81,10 +81,10 @@ const DOCKER_COMPOSE_SNIPPET = `services:
     container_name: sagesplit
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3044:3044"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=3044
       - DATA_DIR=/app/data
     volumes:
       - sagesplit_data:/app/data
