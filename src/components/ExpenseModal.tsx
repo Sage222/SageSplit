@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Check, AlertCircle, ArrowRight } from 'lucide-react';
+import { X, Check, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
 import {
   UserAccount,
   ExpenseEntry,
@@ -58,12 +58,15 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [exactAmounts, setExactAmounts] = useState<Record<string, string>>({});
   const [percentages, setPercentages] = useState<Record<string, string>>({});
 
+  // Pre-save confirmation step state
+  const [confirmingSave, setConfirmingSave] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
+    setConfirmingSave(false);
 
     if (editingExpense) {
       setIsSettlement(editingExpense.isSettlement);
@@ -240,18 +243,19 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const finalResolvedTitle =
+    isSettlement && !title.trim()
+      ? `Settlement: ${users.find((u) => u.id === paidByUserId)?.displayName} → ${
+          users.find((u) => u.id === settlementReceiverId)?.displayName
+        }`
+      : title.trim();
+
+  // Step 1: Validate form and open Confirmation Prompt
+  const handleReviewBeforeSave = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const finalTitle =
-      isSettlement && !title.trim()
-        ? `Settlement: ${users.find((u) => u.id === paidByUserId)?.displayName} → ${
-            users.find((u) => u.id === settlementReceiverId)?.displayName
-          }`
-        : title.trim();
-
-    if (!finalTitle) {
+    if (!finalResolvedTitle) {
       setError('Please enter a description.');
       return;
     }
@@ -261,11 +265,17 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       return;
     }
 
+    setConfirmingSave(true);
+  };
+
+  // Step 2: Confirmed by user -> Save to server
+  const handleConfirmAndSave = async () => {
+    setError(null);
     setSubmitting(true);
     try {
       await onSave({
         id: editingExpense?.id,
-        title: finalTitle,
+        title: finalResolvedTitle,
         amount: numericAmount,
         paidByUserId,
         date,
@@ -276,10 +286,13 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       onClose();
     } catch (err: any) {
       setError(err?.message || 'Failed to save.');
+      setConfirmingSave(false);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const payerUser = users.find((u) => u.id === paidByUserId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4">
@@ -289,7 +302,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5 sm:py-4 shrink-0">
           <h2 className="text-base font-semibold text-slate-900">
-            {editingExpense
+            {confirmingSave
+              ? 'Confirm Before Saving'
+              : editingExpense
               ? 'Edit Expense'
               : isSettlement
               ? 'Record Settlement'
@@ -305,288 +320,385 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           </button>
         </div>
 
-        {!editingExpense && users.length > 1 && (
-          <div className="border-b border-slate-200 bg-slate-50 px-5 py-2.5 shrink-0">
-            <div className="grid grid-cols-2 rounded-lg bg-slate-200/80 p-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSettlement(false);
-                  if (title.startsWith('Settlement:')) setTitle('');
-                }}
-                className={`py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  !isSettlement ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
-                }`}
-              >
-                Expense
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSettlement(true);
-                  const fromU = users.find((u) => u.id === paidByUserId);
-                  const toU = users.find((u) => u.id === settlementReceiverId);
-                  setTitle(`Settlement: ${fromU?.displayName} → ${toU?.displayName}`);
-                }}
-                className={`py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  isSettlement ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
-                }`}
-              >
-                Settle Up
-              </button>
-            </div>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-5 space-y-4 flex-1">
-          {error && (
-            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
-              <input
-                type="text"
-                required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={isSettlement ? 'Settlement' : 'e.g. Dinner, Hotel, Groceries'}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-slate-900 focus:border-slate-900 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Amount ($)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0.01"
-                required
-                value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value)}
-                placeholder="0.00"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 sm:py-2 text-base sm:text-sm font-mono tabular-nums text-slate-900 focus:border-slate-900 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {isSettlement ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 items-center rounded-lg border border-slate-200 bg-slate-50 p-3.5">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Paid By</label>
-                <select
-                  value={paidByUserId}
-                  onChange={(e) => {
-                    const nextPayer = e.target.value;
-                    setPaidByUserId(nextPayer);
-                    const fromU = users.find((u) => u.id === nextPayer);
-                    const toU = users.find((u) => u.id === settlementReceiverId);
-                    setTitle(`Settlement: ${fromU?.displayName} → ${toU?.displayName}`);
-                  }}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base sm:text-sm"
-                >
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.displayName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="hidden sm:flex items-center justify-center pt-4">
-                <ArrowRight className="h-4 w-4 text-slate-500" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Paid To</label>
-                <select
-                  value={settlementReceiverId}
-                  onChange={(e) => {
-                    const nextRec = e.target.value;
-                    setSettlementReceiverId(nextRec);
-                    const fromU = users.find((u) => u.id === paidByUserId);
-                    const toU = users.find((u) => u.id === nextRec);
-                    setTitle(`Settlement: ${fromU?.displayName} → ${toU?.displayName}`);
-                  }}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base sm:text-sm"
-                >
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.displayName}
-                    </option>
-                  ))}
-                </select>
+        {/* CONFIRMATION PROMPT VIEW */}
+        {confirmingSave ? (
+          <div className="p-5 space-y-5 overflow-y-auto">
+            <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <CheckCircle2 className="h-5 w-5 text-slate-900 shrink-0 mt-0.5" />
+              <div className="text-xs text-slate-600 leading-relaxed">
+                Please review the details below and confirm you want to save this{' '}
+                {isSettlement ? 'settlement' : 'expense'}.
               </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Paid By</label>
-                <select
-                  value={paidByUserId}
-                  onChange={(e) => setPaidByUserId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 sm:py-2 text-base sm:text-sm text-slate-900 focus:border-slate-900 focus:outline-none"
-                >
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.displayName}
-                    </option>
-                  ))}
-                </select>
+
+            <div className="rounded-xl border border-slate-200 divide-y divide-slate-200 text-sm">
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-xs text-slate-500">Description</span>
+                <span className="font-semibold text-slate-900 text-right">
+                  {finalResolvedTitle}
+                </span>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Date</label>
-                <input
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 sm:py-2 text-base sm:text-sm font-mono text-slate-900 focus:border-slate-900 focus:outline-none"
-                />
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-xs text-slate-500">Total Amount</span>
+                <span className="font-mono tabular-nums font-bold text-base text-slate-900">
+                  ${numericAmount.toFixed(2)}
+                </span>
               </div>
-            </div>
-          )}
 
-          {!isSettlement && (
-            <div className="space-y-2.5 pt-1">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-xs font-medium text-slate-700">Split Method</label>
-                <div className="inline-flex rounded-lg bg-slate-100 p-1">
-                  {(
-                    [
-                      { id: 'equal', label: 'Equal' },
-                      { id: 'exact', label: 'Exact' },
-                      { id: 'percentage', label: '%' },
-                    ] as const
-                  ).map((mode) => (
-                    <button
-                      key={mode.id}
-                      type="button"
-                      onClick={() => setSplitMode(mode.id)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        splitMode === mode.id
-                          ? 'bg-white text-slate-900 shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-xs text-slate-500">Paid By</span>
+                <span className="font-medium text-slate-900">
+                  {payerUser?.displayName || paidByUserId}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-xs text-slate-500">Date</span>
+                <span className="font-mono text-xs text-slate-900">{date}</span>
+              </div>
+
+              <div className="px-4 py-3 space-y-2">
+                <div className="text-xs text-slate-500">
+                  {isSettlement ? 'Recipient' : 'Split Breakdown'}
+                </div>
+                <div className="space-y-1.5">
+                  {computedSplits.map((s) => {
+                    const member = users.find((u) => u.id === s.userId);
+                    return (
+                      <div
+                        key={s.userId}
+                        className="flex items-center justify-between text-xs"
+                      >
+                        <span className="font-medium text-slate-800">
+                          {member?.displayName || s.userId}
+                        </span>
+                        <span className="font-mono tabular-nums font-semibold text-slate-900">
+                          ${s.amount.toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            </div>
 
-              <div className="rounded-lg border border-slate-200 divide-y divide-slate-200">
-                {users.map((u) => {
-                  const resolvedSplit = computedSplits.find((s) => s.userId === u.id);
-                  const resolvedAmt = resolvedSplit ? resolvedSplit.amount : 0;
-                  const isIncludedEqual = selectedUserIds.includes(u.id);
-
-                  return (
-                    <div
-                      key={u.id}
-                      onClick={() => {
-                        if (splitMode === 'equal') toggleEqualParticipant(u.id);
-                      }}
-                      className={`flex items-center justify-between px-3.5 py-2.5 text-sm ${
-                        splitMode === 'equal' ? 'cursor-pointer active:bg-slate-50' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {splitMode === 'equal' && (
-                          <div
-                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
-                              isIncludedEqual
-                                ? 'border-slate-900 bg-slate-900 text-white'
-                                : 'border-slate-300 bg-white'
-                            }`}
-                          >
-                            {isIncludedEqual && <Check className="h-3.5 w-3.5" />}
-                          </div>
-                        )}
-                        <span className="font-medium text-slate-900 truncate">{u.displayName}</span>
-                      </div>
-
-                      <div
-                        className="flex items-center gap-2 shrink-0"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {splitMode === 'exact' && (
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            step="0.01"
-                            min="0"
-                            value={exactAmounts[u.id] ?? '0.00'}
-                            onChange={(e) =>
-                              setExactAmounts((prev) => ({ ...prev, [u.id]: e.target.value }))
-                            }
-                            className="w-24 rounded-md border border-slate-300 px-2.5 py-1.5 text-right text-base sm:text-xs font-mono tabular-nums"
-                          />
-                        )}
-
-                        {splitMode === 'percentage' && (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              step="0.1"
-                              min="0"
-                              max="100"
-                              value={percentages[u.id] ?? '0'}
-                              onChange={(e) =>
-                                setPercentages((prev) => ({ ...prev, [u.id]: e.target.value }))
-                              }
-                              className="w-20 rounded-md border border-slate-300 px-2.5 py-1.5 text-right text-base sm:text-xs font-mono tabular-nums"
-                            />
-                            <span className="text-xs text-slate-400">%</span>
-                            <span className="w-16 text-right text-xs font-mono tabular-nums text-slate-600">
-                              ${resolvedAmt.toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-
-                        {splitMode === 'equal' && (
-                          <span className="text-xs font-mono tabular-nums text-slate-700">
-                            ${resolvedAmt.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => setConfirmingSave(false)}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 sm:py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Back to Edit
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={handleConfirmAndSave}
+                className="rounded-xl bg-slate-900 px-4 py-3 sm:py-2.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                {submitting ? 'Saving...' : 'Confirm & Save'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {!editingExpense && users.length > 1 && (
+              <div className="border-b border-slate-200 bg-slate-50 px-5 py-2.5 shrink-0">
+                <div className="grid grid-cols-2 rounded-lg bg-slate-200/80 p-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSettlement(false);
+                      if (title.startsWith('Settlement:')) setTitle('');
+                    }}
+                    className={`py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      !isSettlement ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                    }`}
+                  >
+                    Expense
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSettlement(true);
+                      const fromU = users.find((u) => u.id === paidByUserId);
+                      const toU = users.find((u) => u.id === settlementReceiverId);
+                      setTitle(`Settlement: ${fromU?.displayName} → ${toU?.displayName}`);
+                    }}
+                    className={`py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      isSettlement ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                    }`}
+                  >
+                    Settle Up
+                  </button>
+                </div>
               </div>
+            )}
 
-              {splitValidation.message && (
-                <div className="text-right text-xs font-mono text-slate-500">
-                  {splitValidation.message}
+            <form onSubmit={handleReviewBeforeSave} className="overflow-y-auto p-5 space-y-4 flex-1">
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                  <span>{error}</span>
                 </div>
               )}
-            </div>
-          )}
 
-          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2.5 border-t border-slate-200 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 sm:py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-slate-900 px-4 py-2.5 sm:py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-            >
-              {submitting ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </form>
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Description
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder={isSettlement ? 'Settlement' : 'e.g. Dinner, Hotel, Groceries'}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-slate-900 focus:border-slate-900 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    Amount ($)
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    value={amountStr}
+                    onChange={(e) => setAmountStr(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 sm:py-2 text-base sm:text-sm font-mono tabular-nums text-slate-900 focus:border-slate-900 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {isSettlement ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 items-center rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Paid By</label>
+                    <select
+                      value={paidByUserId}
+                      onChange={(e) => {
+                        const nextPayer = e.target.value;
+                        setPaidByUserId(nextPayer);
+                        const fromU = users.find((u) => u.id === nextPayer);
+                        const toU = users.find((u) => u.id === settlementReceiverId);
+                        setTitle(`Settlement: ${fromU?.displayName} → ${toU?.displayName}`);
+                      }}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base sm:text-sm"
+                    >
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="hidden sm:flex items-center justify-center pt-4">
+                    <ArrowRight className="h-4 w-4 text-slate-500" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Paid To</label>
+                    <select
+                      value={settlementReceiverId}
+                      onChange={(e) => {
+                        const nextRec = e.target.value;
+                        setSettlementReceiverId(nextRec);
+                        const fromU = users.find((u) => u.id === paidByUserId);
+                        const toU = users.find((u) => u.id === nextRec);
+                        setTitle(`Settlement: ${fromU?.displayName} → ${toU?.displayName}`);
+                      }}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base sm:text-sm"
+                    >
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Paid By</label>
+                    <select
+                      value={paidByUserId}
+                      onChange={(e) => setPaidByUserId(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 sm:py-2 text-base sm:text-sm text-slate-900 focus:border-slate-900 focus:outline-none"
+                    >
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.displayName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 sm:py-2 text-base sm:text-sm font-mono text-slate-900 focus:border-slate-900 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {!isSettlement && (
+                <div className="space-y-2.5 pt-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs font-medium text-slate-700">Split Method</label>
+                    <div className="inline-flex rounded-lg bg-slate-100 p-1">
+                      {(
+                        [
+                          { id: 'equal', label: 'Equal' },
+                          { id: 'exact', label: 'Exact' },
+                          { id: 'percentage', label: '%' },
+                        ] as const
+                      ).map((mode) => (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() => setSplitMode(mode.id)}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            splitMode === mode.id
+                              ? 'bg-white text-slate-900 shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          {mode.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-slate-200 divide-y divide-slate-200">
+                    {users.map((u) => {
+                      const resolvedSplit = computedSplits.find((s) => s.userId === u.id);
+                      const resolvedAmt = resolvedSplit ? resolvedSplit.amount : 0;
+                      const isIncludedEqual = selectedUserIds.includes(u.id);
+
+                      return (
+                        <div
+                          key={u.id}
+                          onClick={() => {
+                            if (splitMode === 'equal') toggleEqualParticipant(u.id);
+                          }}
+                          className={`flex items-center justify-between px-3.5 py-2.5 text-sm ${
+                            splitMode === 'equal' ? 'cursor-pointer active:bg-slate-50' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {splitMode === 'equal' && (
+                              <div
+                                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+                                  isIncludedEqual
+                                    ? 'border-slate-900 bg-slate-900 text-white'
+                                    : 'border-slate-300 bg-white'
+                                }`}
+                              >
+                                {isIncludedEqual && <Check className="h-3.5 w-3.5" />}
+                              </div>
+                            )}
+                            <span className="font-medium text-slate-900 truncate">
+                              {u.displayName}
+                            </span>
+                          </div>
+
+                          <div
+                            className="flex items-center gap-2 shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {splitMode === 'exact' && (
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                step="0.01"
+                                min="0"
+                                value={exactAmounts[u.id] ?? '0.00'}
+                                onChange={(e) =>
+                                  setExactAmounts((prev) => ({
+                                    ...prev,
+                                    [u.id]: e.target.value,
+                                  }))
+                                }
+                                className="w-24 rounded-md border border-slate-300 px-2.5 py-1.5 text-right text-base sm:text-xs font-mono tabular-nums"
+                              />
+                            )}
+
+                            {splitMode === 'percentage' && (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  inputMode="decimal"
+                                  step="0.1"
+                                  min="0"
+                                  max="100"
+                                  value={percentages[u.id] ?? '0'}
+                                  onChange={(e) =>
+                                    setPercentages((prev) => ({
+                                      ...prev,
+                                      [u.id]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-20 rounded-md border border-slate-300 px-2.5 py-1.5 text-right text-base sm:text-xs font-mono tabular-nums"
+                                />
+                                <span className="text-xs text-slate-400">%</span>
+                                <span className="w-16 text-right text-xs font-mono tabular-nums text-slate-600">
+                                  ${resolvedAmt.toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+
+                            {splitMode === 'equal' && (
+                              <span className="text-xs font-mono tabular-nums text-slate-700">
+                                ${resolvedAmt.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {splitValidation.message && (
+                    <div className="text-right text-xs font-mono text-slate-500">
+                      {splitValidation.message}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2.5 border-t border-slate-200 pt-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 sm:py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-slate-900 px-4 py-2.5 sm:py-2 text-xs font-medium text-white hover:bg-slate-800"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

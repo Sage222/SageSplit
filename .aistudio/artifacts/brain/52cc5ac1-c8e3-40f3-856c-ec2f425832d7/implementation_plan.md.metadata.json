@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for adding brute-force login rate limiting (5 failed attempts -> 30-minute IP ban) and a pre-save expense confirmation prompt in SageSplit.",
+  "updatedAt":  "2026-10-27T23:39:23.966534338Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

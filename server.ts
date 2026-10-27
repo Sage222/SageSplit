@@ -103,13 +103,35 @@ function saveDatabase(db: PersistedDatabase): void {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2), 'utf-8');
+    const tempFile = `${DATA_FILE}.tmp`;
+    fs.writeFileSync(tempFile, JSON.stringify(db, null, 2), 'utf-8');
+    fs.renameSync(tempFile, DATA_FILE);
   } catch (err) {
     console.error('Failed to persist ledger-store.json:', err);
   }
 }
 
 const db: PersistedDatabase = loadDatabase();
+
+// Brute-force login protection: 5 failed attempts -> 30-minute ban
+const MAX_FAILED_ATTEMPTS = 5;
+const BAN_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+
+interface LoginAttemptRecord {
+  failedCount: number;
+  bannedUntil: number | null;
+  lastAttemptAt: number;
+}
+
+const loginAttemptsByIp = new Map<string, LoginAttemptRecord>();
+
+function getClientIp(req: express.Request): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.trim().length > 0) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.socket.remoteAddress || 'unknown-ip';
+}
 
 function formatSplitsForDiff(splits: ExpenseEntry['splits'], users: UserAccount[]): string {
   const userMap = new Map(users.map((u) => [u.id, u.displayName]));
@@ -182,8 +204,27 @@ async function startServer() {
     });
   });
 
-  // Authenticate with username & password
+  // Authenticate with username & password (with 5-attempt / 30-min brute-force ban)
   app.post('/api/auth/login', (req, res) => {
+    const clientIp = getClientIp(req);
+    const now = Date.now();
+    const record = loginAttemptsByIp.get(clientIp);
+
+    if (record && record.bannedUntil) {
+      if (now < record.bannedUntil) {
+        const remainingMinutes = Math.max(1, Math.ceil((record.bannedUntil - now) / 60000));
+        res.status(429).json({
+          error: `Too many failed login attempts. Locked out for ${remainingMinutes} more minute${
+            remainingMinutes === 1 ? '' : 's'
+          }.`,
+        });
+        return;
+      } else {
+        // Ban window expired, reset record
+        loginAttemptsByIp.delete(clientIp);
+      }
+    }
+
     const { username, password } = req.body || {};
     if (!username || typeof username !== 'string') {
       res.status(400).json({ error: 'Username is required.' });
@@ -195,10 +236,35 @@ async function startServer() {
     const user = db.users.find((u) => u.username.toLowerCase() === normalized && u.active);
 
     if (!user || String(user.password || '').trim() !== cleanPass) {
-      res.status(401).json({ error: 'Invalid username or password.' });
+      const current = loginAttemptsByIp.get(clientIp) || {
+        failedCount: 0,
+        bannedUntil: null,
+        lastAttemptAt: now,
+      };
+      current.failedCount += 1;
+      current.lastAttemptAt = now;
+
+      if (current.failedCount >= MAX_FAILED_ATTEMPTS) {
+        current.bannedUntil = now + BAN_DURATION_MS;
+        loginAttemptsByIp.set(clientIp, current);
+        res.status(429).json({
+          error: '5 failed login attempts. Your IP has been locked out for 30 minutes.',
+        });
+        return;
+      }
+
+      loginAttemptsByIp.set(clientIp, current);
+      const remaining = MAX_FAILED_ATTEMPTS - current.failedCount;
+      res.status(401).json({
+        error: `Invalid username or password. ${remaining} attempt${
+          remaining === 1 ? '' : 's'
+        } remaining before a 30-minute ban.`,
+      });
       return;
     }
 
+    // Successful login clears any prior failed attempts for this IP
+    loginAttemptsByIp.delete(clientIp);
     res.json({ user });
   });
 
