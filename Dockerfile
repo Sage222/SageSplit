@@ -1,18 +1,18 @@
 # syntax=docker/dockerfile:1
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
-# Copy package manifests and npm configuration
-COPY package.json package-lock.json* .npmrc* ./
-RUN npm install --legacy-peer-deps --no-audit --no-fund
+# Copy only package.json and .npmrc (avoiding npm bug #4828 with lockfiles & optional native bindings)
+COPY package.json .npmrc* ./
+RUN npm install --legacy-peer-deps --include=optional --no-audit --no-fund
 
 # Copy application source and build frontend bundle
 COPY . .
 RUN npm run build
 
 # Production runtime stage
-FROM node:22-alpine AS runner
+FROM node:22-slim AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
@@ -34,6 +34,6 @@ EXPOSE 3000
 VOLUME ["/app/data"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+  CMD ["node", "-e", "fetch('http://localhost:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
 
 CMD ["./node_modules/.bin/tsx", "server.ts"]
