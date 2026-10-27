@@ -31,7 +31,6 @@ interface PersistedDatabase {
 function getSeedDatabase(): PersistedDatabase {
   const nowIso = new Date().toISOString();
 
-  // Only the initial Admin account is created so the app starts completely clean
   const users: UserAccount[] = [
     {
       id: 'usr-admin',
@@ -64,7 +63,14 @@ function loadDatabase(): PersistedDatabase {
       if (parsed && Array.isArray(parsed.users) && Array.isArray(parsed.expenses)) {
         return {
           users: parsed.users,
-          groups: Array.isArray(parsed.groups) ? parsed.groups : [],
+          groups: Array.isArray(parsed.groups)
+            ? parsed.groups.map((g) => ({
+                ...g,
+                memberUserIds: Array.isArray(g.memberUserIds)
+                  ? g.memberUserIds
+                  : parsed.users.map((u) => u.id),
+              }))
+            : [],
           expenses: parsed.expenses,
           logs: Array.isArray(parsed.logs) ? parsed.logs : [],
         };
@@ -98,20 +104,9 @@ function formatSplitsForDiff(splits: ExpenseEntry['splits'], users: UserAccount[
     .join(', ');
 }
 
-function findUser(userId?: string): UserAccount {
-  const found = db.users.find((u) => u.id === userId);
-  return (
-    found ||
-    db.users[0] || {
-      id: 'usr-admin',
-      username: 'admin',
-      displayName: 'Admin',
-      role: 'admin',
-      avatarColor: '#0F172A',
-      createdAt: new Date().toISOString(),
-      active: true,
-    }
-  );
+function findUser(userId?: string): UserAccount | undefined {
+  if (!userId) return undefined;
+  return db.users.find((u) => u.id === userId);
 }
 
 async function startServer() {
@@ -192,26 +187,40 @@ async function startServer() {
     res.json({ user });
   });
 
-  // Create new Expense Group (e.g. for a holiday or trip)
+  // Admin: Create new Expense Group
   app.post('/api/groups', (req, res) => {
-    const { name, actorUserId } = req.body || {};
+    const { name, memberUserIds, actorUserId } = req.body || {};
+    const actor = findUser(actorUserId);
+
+    if (!actor || actor.role !== 'admin') {
+      res.status(403).json({ error: 'Only admin accounts can create expense groups.' });
+      return;
+    }
+
     const cleanName = String(name || '').trim();
     if (!cleanName) {
       res.status(400).json({ error: 'Group name is required.' });
       return;
     }
 
-    const actor = findUser(actorUserId);
     const nowIso = new Date().toISOString();
+    const validMemberIds = Array.isArray(memberUserIds)
+      ? memberUserIds.filter((uid: string) => db.users.some((u) => u.id === uid))
+      : db.users.map((u) => u.id);
 
     const newGroup: ExpenseGroup = {
       id: `grp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       name: cleanName,
+      memberUserIds: validMemberIds.length > 0 ? validMemberIds : [actor.id],
       createdAt: nowIso,
       createdByUserId: actor.id,
     };
 
     db.groups.push(newGroup);
+
+    const memberNames = newGroup.memberUserIds
+      .map((uid) => findUser(uid)?.displayName || uid)
+      .join(', ');
 
     db.logs.unshift({
       id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -224,7 +233,10 @@ async function startServer() {
       targetId: newGroup.id,
       targetTitle: newGroup.name,
       summary: `Created expense group "${newGroup.name}"`,
-      changes: [{ field: 'Group Name', before: '—', after: newGroup.name }],
+      changes: [
+        { field: 'Group Name', before: '—', after: newGroup.name },
+        { field: 'Members', before: '—', after: memberNames || 'None' },
+      ],
     });
 
     saveDatabase(db);
@@ -232,11 +244,88 @@ async function startServer() {
     res.status(201).json({ group: newGroup });
   });
 
-  // Delete Expense Group
+  // Admin: Update Expense Group (name or members)
+  app.put('/api/groups/:id', (req, res) => {
+    const { id } = req.params;
+    const { name, memberUserIds, actorUserId } = req.body || {};
+    const actor = findUser(actorUserId);
+
+    if (!actor || actor.role !== 'admin') {
+      res.status(403).json({ error: 'Only admin accounts can modify expense groups.' });
+      return;
+    }
+
+    const idx = db.groups.findIndex((g) => g.id === id);
+    if (idx === -1) {
+      res.status(404).json({ error: 'Group not found.' });
+      return;
+    }
+
+    const before = structuredClone(db.groups[idx]);
+    const nextName = name !== undefined ? String(name).trim() || before.name : before.name;
+    const nextMembers = Array.isArray(memberUserIds)
+      ? memberUserIds.filter((uid: string) => db.users.some((u) => u.id === uid))
+      : before.memberUserIds;
+
+    const updated: ExpenseGroup = {
+      ...before,
+      name: nextName,
+      memberUserIds: nextMembers,
+    };
+
+    const changes: AuditLogChange[] = [];
+    if (before.name !== updated.name) {
+      changes.push({ field: 'Group Name', before: before.name, after: updated.name });
+    }
+
+    const beforeMemberNames = before.memberUserIds
+      .map((uid) => findUser(uid)?.displayName || uid)
+      .join(', ');
+    const afterMemberNames = updated.memberUserIds
+      .map((uid) => findUser(uid)?.displayName || uid)
+      .join(', ');
+
+    if (beforeMemberNames !== afterMemberNames) {
+      changes.push({
+        field: 'Assigned Users',
+        before: beforeMemberNames || 'None',
+        after: afterMemberNames || 'None',
+      });
+    }
+
+    db.groups[idx] = updated;
+
+    if (changes.length > 0) {
+      db.logs.unshift({
+        id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        groupId: updated.id,
+        timestamp: new Date().toISOString(),
+        actorUserId: actor.id,
+        actorName: actor.displayName,
+        actorUsername: actor.username,
+        action: 'GROUP_UPDATED',
+        targetId: updated.id,
+        targetTitle: updated.name,
+        summary: `Updated expense group "${updated.name}"`,
+        changes,
+      });
+    }
+
+    saveDatabase(db);
+    broadcastState('group:updated');
+    res.json({ group: updated });
+  });
+
+  // Admin: Delete Expense Group
   app.delete('/api/groups/:id', (req, res) => {
     const { id } = req.params;
     const actorUserId = (req.query.actorUserId as string) || req.body?.actorUserId;
     const actor = findUser(actorUserId);
+
+    if (!actor || actor.role !== 'admin') {
+      res.status(403).json({ error: 'Only admin accounts can delete expense groups.' });
+      return;
+    }
 
     const group = db.groups.find((g) => g.id === id);
     if (!group) {
@@ -266,7 +355,7 @@ async function startServer() {
     res.json({ deletedId: id });
   });
 
-  // Create new expense or settlement
+  // Create new expense or settlement (allowed for authenticated members in the group and admins)
   app.post('/api/expenses', (req, res) => {
     const {
       groupId,
@@ -280,9 +369,25 @@ async function startServer() {
       actorUserId,
     } = req.body || {};
 
+    const actor = findUser(actorUserId);
+    if (!actor) {
+      res.status(401).json({ error: 'You must be logged in to add an expense.' });
+      return;
+    }
+
+    const group = db.groups.find((g) => g.id === groupId);
+    if (!group) {
+      res.status(404).json({ error: 'Expense group not found.' });
+      return;
+    }
+
+    if (actor.role !== 'admin' && !group.memberUserIds.includes(actor.id)) {
+      res.status(403).json({ error: 'You do not have access to this expense group.' });
+      return;
+    }
+
     const numAmount = roundCents(Number(amount));
     if (
-      !groupId ||
       !title ||
       isNaN(numAmount) ||
       numAmount <= 0 ||
@@ -290,14 +395,11 @@ async function startServer() {
       !Array.isArray(splits) ||
       splits.length === 0
     ) {
-      res
-        .status(400)
-        .json({ error: 'Group, title, positive amount, payer, and splits are required.' });
+      res.status(400).json({ error: 'Title, positive amount, payer, and splits are required.' });
       return;
     }
 
-    const actor = findUser(actorUserId);
-    const payer = findUser(paidByUserId);
+    const payer = findUser(paidByUserId) || actor;
     const nowIso = new Date().toISOString();
 
     const newExpense: ExpenseEntry = {
@@ -334,9 +436,10 @@ async function startServer() {
       targetId: newExpense.id,
       targetTitle: newExpense.title,
       summary: newExpense.isSettlement
-        ? `Recorded settlement of $${newExpense.amount.toFixed(2)} paid by ${payer.displayName}`
-        : `Added "${newExpense.title}" ($${newExpense.amount.toFixed(2)}) paid by ${payer.displayName}`,
+        ? `Recorded settlement of $${newExpense.amount.toFixed(2)} paid by ${payer.displayName} in "${group.name}"`
+        : `Added "${newExpense.title}" ($${newExpense.amount.toFixed(2)}) paid by ${payer.displayName} in "${group.name}"`,
       changes: [
+        { field: 'Group', before: '—', after: group.name },
         { field: 'Amount', before: '—', after: `$${newExpense.amount.toFixed(2)}` },
         { field: 'Paid By', before: '—', after: payer.displayName },
         {
@@ -354,9 +457,17 @@ async function startServer() {
     res.status(201).json({ expense: newExpense, log: logEntry });
   });
 
-  // Edit existing expense
+  // Admin Only: Edit existing expense
   app.put('/api/expenses/:id', (req, res) => {
     const { id } = req.params;
+    const { title, amount, paidByUserId, date, splitMode, splits, actorUserId } = req.body || {};
+
+    const actor = findUser(actorUserId);
+    if (!actor || actor.role !== 'admin') {
+      res.status(403).json({ error: 'Only admin accounts can edit existing expenses.' });
+      return;
+    }
+
     const existingIndex = db.expenses.findIndex((e) => e.id === id);
     if (existingIndex === -1) {
       res.status(404).json({ error: 'Expense not found.' });
@@ -364,9 +475,6 @@ async function startServer() {
     }
 
     const before = structuredClone(db.expenses[existingIndex]);
-    const { title, amount, paidByUserId, date, splitMode, splits, actorUserId } = req.body || {};
-
-    const actor = findUser(actorUserId);
     const nowIso = new Date().toISOString();
 
     const updatedAmount = amount !== undefined ? roundCents(Number(amount)) : before.amount;
@@ -408,8 +516,8 @@ async function startServer() {
     if (before.paidByUserId !== updated.paidByUserId) {
       changes.push({
         field: 'Paid By',
-        before: findUser(before.paidByUserId).displayName,
-        after: findUser(updated.paidByUserId).displayName,
+        before: findUser(before.paidByUserId)?.displayName || before.paidByUserId,
+        after: findUser(updated.paidByUserId)?.displayName || updated.paidByUserId,
       });
     }
     if (before.date !== updated.date) {
@@ -454,19 +562,24 @@ async function startServer() {
     res.json({ expense: updated, log: logEntry });
   });
 
-  // Delete expense
+  // Admin Only: Delete expense
   app.delete('/api/expenses/:id', (req, res) => {
     const { id } = req.params;
     const actorUserId = (req.query.actorUserId as string) || req.body?.actorUserId;
-    const existingIndex = db.expenses.findIndex((e) => e.id === id);
+    const actor = findUser(actorUserId);
 
+    if (!actor || actor.role !== 'admin') {
+      res.status(403).json({ error: 'Only admin accounts can delete expenses.' });
+      return;
+    }
+
+    const existingIndex = db.expenses.findIndex((e) => e.id === id);
     if (existingIndex === -1) {
       res.status(404).json({ error: 'Expense not found.' });
       return;
     }
 
     const removed = structuredClone(db.expenses[existingIndex]);
-    const actor = findUser(actorUserId);
     const nowIso = new Date().toISOString();
 
     db.expenses.splice(existingIndex, 1);
@@ -482,9 +595,7 @@ async function startServer() {
       targetId: removed.id,
       targetTitle: removed.title,
       summary: `Deleted "${removed.title}" ($${removed.amount.toFixed(2)})`,
-      changes: [
-        { field: 'Amount', before: `$${removed.amount.toFixed(2)}`, after: 'Deleted' },
-      ],
+      changes: [{ field: 'Amount', before: `$${removed.amount.toFixed(2)}`, after: 'Deleted' }],
     };
 
     db.logs.unshift(logEntry);
@@ -494,12 +605,45 @@ async function startServer() {
     res.json({ deletedId: removed.id });
   });
 
-  // Admin: Create new user
-  app.post('/api/users', (req, res) => {
-    const { username, password, displayName, role, actorUserId } = req.body || {};
+  // Admin Only: Delete individual log entry
+  app.delete('/api/logs/:id', (req, res) => {
+    const { id } = req.params;
+    const actorUserId = (req.query.actorUserId as string) || req.body?.actorUserId;
     const actor = findUser(actorUserId);
 
-    if (actor.role !== 'admin') {
+    if (!actor || actor.role !== 'admin') {
+      res.status(403).json({ error: 'Only admin accounts can delete log entries.' });
+      return;
+    }
+
+    db.logs = db.logs.filter((l) => l.id !== id);
+    saveDatabase(db);
+    broadcastState('logs:updated');
+    res.json({ deletedId: id });
+  });
+
+  // Admin Only: Clear all logs
+  app.delete('/api/logs', (req, res) => {
+    const actorUserId = (req.query.actorUserId as string) || req.body?.actorUserId;
+    const actor = findUser(actorUserId);
+
+    if (!actor || actor.role !== 'admin') {
+      res.status(403).json({ error: 'Only admin accounts can clear logs.' });
+      return;
+    }
+
+    db.logs = [];
+    saveDatabase(db);
+    broadcastState('logs:cleared');
+    res.json({ cleared: true });
+  });
+
+  // Admin: Create new user (with optional groupIds assignment)
+  app.post('/api/users', (req, res) => {
+    const { username, password, displayName, role, groupIds, actorUserId } = req.body || {};
+    const actor = findUser(actorUserId);
+
+    if (!actor || actor.role !== 'admin') {
       res.status(403).json({ error: 'Only admin accounts can create users.' });
       return;
     }
@@ -536,6 +680,31 @@ async function startServer() {
 
     db.users.push(newUser);
 
+    // Assign user to selected expense groups
+    const assignedGroupNames: string[] = [];
+    if (Array.isArray(groupIds)) {
+      db.groups.forEach((g) => {
+        if (groupIds.includes(g.id)) {
+          if (!g.memberUserIds.includes(newUser.id)) {
+            g.memberUserIds.push(newUser.id);
+          }
+          assignedGroupNames.push(g.name);
+        }
+      });
+    }
+
+    const changes: AuditLogChange[] = [
+      { field: 'Username', before: '—', after: `@${newUser.username}` },
+      { field: 'Role', before: '—', after: newUser.role },
+    ];
+    if (assignedGroupNames.length > 0) {
+      changes.push({
+        field: 'Expense Groups',
+        before: '—',
+        after: assignedGroupNames.join(', '),
+      });
+    }
+
     db.logs.unshift({
       id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       timestamp: nowIso,
@@ -546,10 +715,7 @@ async function startServer() {
       targetId: newUser.id,
       targetTitle: `${newUser.displayName} (@${newUser.username})`,
       summary: `Created user ${newUser.displayName} (@${newUser.username})`,
-      changes: [
-        { field: 'Username', before: '—', after: `@${newUser.username}` },
-        { field: 'Role', before: '—', after: newUser.role },
-      ],
+      changes,
     });
 
     saveDatabase(db);
@@ -558,13 +724,13 @@ async function startServer() {
     res.status(201).json({ user: newUser });
   });
 
-  // Admin: Update user
+  // Admin: Update user (including groupIds assignment)
   app.put('/api/users/:id', (req, res) => {
     const { id } = req.params;
-    const { username, password, displayName, role, actorUserId } = req.body || {};
+    const { username, password, displayName, role, groupIds, actorUserId } = req.body || {};
     const actor = findUser(actorUserId);
 
-    if (actor.role !== 'admin') {
+    if (!actor || actor.role !== 'admin') {
       res.status(403).json({ error: 'Only admin accounts can edit users.' });
       return;
     }
@@ -604,7 +770,9 @@ async function startServer() {
       ...before,
       username: cleanUsername || before.username,
       displayName:
-        displayName !== undefined ? String(displayName).trim() || before.displayName : before.displayName,
+        displayName !== undefined
+          ? String(displayName).trim() || before.displayName
+          : before.displayName,
       password:
         password !== undefined && String(password).trim() !== ''
           ? String(password).trim()
@@ -617,13 +785,48 @@ async function startServer() {
       changes.push({ field: 'Name', before: before.displayName, after: updated.displayName });
     }
     if (before.username !== updated.username) {
-      changes.push({ field: 'Username', before: `@${before.username}`, after: `@${updated.username}` });
+      changes.push({
+        field: 'Username',
+        before: `@${before.username}`,
+        after: `@${updated.username}`,
+      });
     }
     if (before.role !== updated.role) {
       changes.push({ field: 'Role', before: before.role, after: updated.role });
     }
     if (before.password !== updated.password) {
       changes.push({ field: 'Password', before: '••••••', after: 'Updated' });
+    }
+
+    // Update Expense Groups membership for this user if groupIds array is provided
+    if (Array.isArray(groupIds)) {
+      const beforeGroups = db.groups
+        .filter((g) => g.memberUserIds.includes(id))
+        .map((g) => g.name)
+        .join(', ');
+
+      db.groups.forEach((g) => {
+        const shouldBeMember = groupIds.includes(g.id);
+        const isCurrentlyMember = g.memberUserIds.includes(id);
+        if (shouldBeMember && !isCurrentlyMember) {
+          g.memberUserIds.push(id);
+        } else if (!shouldBeMember && isCurrentlyMember) {
+          g.memberUserIds = g.memberUserIds.filter((uid) => uid !== id);
+        }
+      });
+
+      const afterGroups = db.groups
+        .filter((g) => g.memberUserIds.includes(id))
+        .map((g) => g.name)
+        .join(', ');
+
+      if (beforeGroups !== afterGroups) {
+        changes.push({
+          field: 'Expense Groups',
+          before: beforeGroups || 'None',
+          after: afterGroups || 'None',
+        });
+      }
     }
 
     db.users[userIdx] = updated;
@@ -655,7 +858,7 @@ async function startServer() {
     const actorUserId = (req.query.actorUserId as string) || req.body?.actorUserId;
     const actor = findUser(actorUserId);
 
-    if (actor.role !== 'admin') {
+    if (!actor || actor.role !== 'admin') {
       res.status(403).json({ error: 'Only admin accounts can remove users.' });
       return;
     }
@@ -675,6 +878,9 @@ async function startServer() {
     }
 
     db.users = db.users.filter((u) => u.id !== id);
+    db.groups.forEach((g) => {
+      g.memberUserIds = g.memberUserIds.filter((uid) => uid !== id);
+    });
 
     db.logs.unshift({
       id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,

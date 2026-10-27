@@ -21,6 +21,7 @@ interface SettingsViewProps {
     username: string;
     password: string;
     role: UserRole;
+    groupIds: string[];
   }) => Promise<void>;
   onUpdateUser: (
     id: string,
@@ -29,12 +30,12 @@ interface SettingsViewProps {
       username?: string;
       password?: string;
       role?: UserRole;
+      groupIds?: string[];
     }
   ) => Promise<void>;
   onDeleteUser: (id: string) => Promise<void>;
   onCreateGroup: (name: string) => Promise<void>;
   onDeleteGroup: (id: string) => Promise<void>;
-  onSwitchUserDirect: (user: UserAccount) => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -46,7 +47,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onDeleteUser,
   onCreateGroup,
   onDeleteGroup,
-  onSwitchUserDirect,
 }) => {
   const isAdmin = currentUser.role === 'admin';
 
@@ -55,6 +55,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<UserRole>('member');
+  const [newUserGroupIds, setNewUserGroupIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [creatingUser, setCreatingUser] = useState(false);
 
@@ -69,6 +70,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editRole, setEditRole] = useState<UserRole>('member');
+  const [editUserGroupIds, setEditUserGroupIds] = useState<string[]>([]);
+
+  if (!isAdmin) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-8 text-center space-y-2">
+        <h2 className="text-sm font-semibold text-slate-900">Admin Access Required</h2>
+        <p className="text-xs text-slate-500">
+          Only an administrator account can manage users, passwords, and expense groups.
+        </p>
+      </div>
+    );
+  }
+
+  const getUserGroupIds = (userId: string): string[] => {
+    return groups.filter((g) => g.memberUserIds.includes(userId)).map((g) => g.id);
+  };
 
   const startEditingUser = (u: UserAccount) => {
     setEditingUserId(u.id);
@@ -76,6 +93,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setEditUsername(u.username);
     setEditPassword(u.password || '');
     setEditRole(u.role);
+    setEditUserGroupIds(getUserGroupIds(u.id));
     setError(null);
   };
 
@@ -87,10 +105,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         username: editUsername,
         password: editPassword,
         role: editRole,
+        groupIds: editUserGroupIds,
       });
       setEditingUserId(null);
     } catch (err: any) {
       setError(err?.message || 'Failed to update user.');
+    }
+  };
+
+  const handleToggleUserGroupDirect = async (userId: string, groupId: string) => {
+    setError(null);
+    const currentGroupIds = getUserGroupIds(userId);
+    const nextGroupIds = currentGroupIds.includes(groupId)
+      ? currentGroupIds.filter((id) => id !== groupId)
+      : [...currentGroupIds, groupId];
+
+    try {
+      await onUpdateUser(userId, { groupIds: nextGroupIds });
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update user groups.');
     }
   };
 
@@ -104,11 +137,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         username: newUsername,
         password: newPassword,
         role: newRole,
+        groupIds: newUserGroupIds,
       });
       setNewDisplayName('');
       setNewUsername('');
       setNewPassword('');
       setNewRole('member');
+      setNewUserGroupIds([]);
     } catch (err: any) {
       setError(err?.message || 'Failed to create user.');
     } finally {
@@ -145,7 +180,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="border-b border-slate-200 px-5 py-4">
           <h2 className="text-sm font-semibold text-slate-900">Expense Groups</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Create separate expense groups for individual holidays, trips, or events.
+            Create expense groups for individual holidays, trips, or events.
           </p>
         </div>
 
@@ -171,44 +206,55 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           {groups.length > 0 && (
             <div className="divide-y divide-slate-200 rounded-lg border border-slate-200">
-              {groups.map((g) => (
-                <div
-                  key={g.id}
-                  className="flex items-center justify-between px-4 py-2.5 text-sm"
-                >
-                  <span className="font-medium text-slate-900">{g.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteGroup(g.id)}
-                    className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                    title="Delete group"
+              {groups.map((g) => {
+                const memberNames = users
+                  .filter((u) => g.memberUserIds.includes(u.id))
+                  .map((u) => u.displayName)
+                  .join(', ');
+                return (
+                  <div
+                    key={g.id}
+                    className="flex items-center justify-between px-4 py-2.5 text-sm"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
+                    <div>
+                      <span className="font-medium text-slate-900">{g.name}</span>
+                      <span className="text-xs text-slate-500 ml-2">
+                        · {memberNames || 'No users assigned'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteGroup(g.id)}
+                      className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      title="Delete group"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
-      {/* User Accounts & Passwords Section */}
+      {/* User Accounts & Group Assignment Section */}
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
         <div className="border-b border-slate-200 px-5 py-4">
-          <h2 className="text-sm font-semibold text-slate-900">User Accounts & Passwords</h2>
+          <h2 className="text-sm font-semibold text-slate-900">
+            User Accounts, Passwords & Group Assignments
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            {isAdmin
-              ? 'Add people and manage their login usernames and passwords.'
-              : 'Only an admin account can add or edit user credentials.'}
+            Create user accounts and assign specific users to specific expense groups.
           </p>
         </div>
 
         <div className="p-5 space-y-5">
-          {isAdmin && (
-            <form
-              onSubmit={handleCreateUserSubmit}
-              className="grid grid-cols-1 gap-3 sm:grid-cols-5 rounded-lg border border-slate-200 bg-slate-50 p-4"
-            >
+          <form
+            onSubmit={handleCreateUserSubmit}
+            className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3"
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Name</label>
                 <input
@@ -267,8 +313,40 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <span>Add User</span>
                 </button>
               </div>
-            </form>
-          )}
+            </div>
+
+            {groups.length > 0 && (
+              <div className="pt-1 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-slate-600">
+                  Assign to Expense Groups:
+                </span>
+                {groups.map((g) => {
+                  const selected = newUserGroupIds.includes(g.id);
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() =>
+                        setNewUserGroupIds((prev) =>
+                          prev.includes(g.id)
+                            ? prev.filter((id) => id !== g.id)
+                            : [...prev, g.id]
+                        )
+                      }
+                      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+                        selected
+                          ? 'border-slate-900 bg-slate-900 text-white'
+                          : 'border-slate-300 bg-white text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {selected && <Check className="h-3 w-3" />}
+                      <span>{g.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </form>
 
           <div className="overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full text-left text-sm">
@@ -278,6 +356,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <th className="py-2.5 px-4">Username</th>
                   <th className="py-2.5 px-4">Password</th>
                   <th className="py-2.5 px-4">Role</th>
+                  <th className="py-2.5 px-4">Assigned Expense Groups</th>
                   <th className="py-2.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -286,10 +365,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   const isEditing = editingUserId === u.id;
                   const showPw = Boolean(visiblePasswords[u.id]);
                   const isCurrent = u.id === currentUser.id;
+                  const userGroupIds = getUserGroupIds(u.id);
 
                   return (
                     <tr key={u.id} className="hover:bg-slate-50/70">
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-4 align-top">
                         {isEditing ? (
                           <input
                             type="text"
@@ -305,7 +385,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         )}
                       </td>
 
-                      <td className="py-2.5 px-4 font-mono text-xs text-slate-600">
+                      <td className="py-2.5 px-4 align-top font-mono text-xs text-slate-600">
                         {isEditing ? (
                           <input
                             type="text"
@@ -318,7 +398,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         )}
                       </td>
 
-                      <td className="py-2.5 px-4 font-mono text-xs">
+                      <td className="py-2.5 px-4 align-top font-mono text-xs">
                         {isEditing ? (
                           <input
                             type="text"
@@ -326,7 +406,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             onChange={(e) => setEditPassword(e.target.value)}
                             className="w-28 rounded border border-slate-300 px-2 py-1 text-xs font-mono"
                           />
-                        ) : isAdmin || isCurrent ? (
+                        ) : (
                           <div className="inline-flex items-center gap-2">
                             <span>{showPw ? u.password : '••••••••'}</span>
                             <button
@@ -346,12 +426,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                               )}
                             </button>
                           </div>
-                        ) : (
-                          <span className="text-slate-400">Hidden</span>
                         )}
                       </td>
 
-                      <td className="py-2.5 px-4 text-xs text-slate-600">
+                      <td className="py-2.5 px-4 align-top text-xs text-slate-600">
                         {isEditing ? (
                           <select
                             value={editRole}
@@ -368,7 +446,52 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         )}
                       </td>
 
-                      <td className="py-2.5 px-4 text-right">
+                      {/* Expense Group Assignment directly on User Account */}
+                      <td className="py-2.5 px-4 align-top">
+                        {groups.length === 0 ? (
+                          <span className="text-xs text-slate-400">No groups created</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5">
+                            {groups.map((g) => {
+                              const isMember = isEditing
+                                ? editUserGroupIds.includes(g.id)
+                                : userGroupIds.includes(g.id);
+                              return (
+                                <button
+                                  key={g.id}
+                                  type="button"
+                                  onClick={() => {
+                                    if (isEditing) {
+                                      setEditUserGroupIds((prev) =>
+                                        prev.includes(g.id)
+                                          ? prev.filter((id) => id !== g.id)
+                                          : [...prev, g.id]
+                                      );
+                                    } else {
+                                      handleToggleUserGroupDirect(u.id, g.id);
+                                    }
+                                  }}
+                                  className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-medium transition-colors ${
+                                    isMember
+                                      ? 'border-slate-900 bg-slate-900 text-white'
+                                      : 'border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-900'
+                                  }`}
+                                  title={
+                                    isMember
+                                      ? `Remove ${u.displayName} from ${g.name}`
+                                      : `Add ${u.displayName} to ${g.name}`
+                                  }
+                                >
+                                  {isMember && <Check className="h-2.5 w-2.5" />}
+                                  <span>{g.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-2.5 px-4 align-top text-right">
                         <div className="inline-flex items-center gap-1.5">
                           {isEditing ? (
                             <>
@@ -389,29 +512,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             </>
                           ) : (
                             <>
-                              {!isCurrent && (
-                                <button
-                                  type="button"
-                                  onClick={() => onSwitchUserDirect(u)}
-                                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
-                                >
-                                  Switch
-                                </button>
-                              )}
-                              {isAdmin && (
-                                <button
-                                  type="button"
-                                  onClick={() => startEditingUser(u)}
-                                  className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
-                                >
-                                  <Edit3 className="h-3 w-3" />
-                                </button>
-                              )}
-                              {isAdmin && users.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => startEditingUser(u)}
+                                className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
+                                title="Edit user"
+                              >
+                                <Edit3 className="h-3 w-3" />
+                              </button>
+                              {users.length > 1 && (
                                 <button
                                   type="button"
                                   onClick={() => onDeleteUser(u.id)}
                                   className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                  title="Delete user"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>

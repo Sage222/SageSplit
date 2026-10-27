@@ -7,6 +7,10 @@ import {
   CheckCircle2,
   FolderPlus,
   ArrowLeftRight,
+  Lock,
+  User,
+  LogOut,
+  AlertCircle,
 } from 'lucide-react';
 import {
   UserAccount,
@@ -20,7 +24,6 @@ import {
   UserRole,
 } from './types';
 import { ExpenseModal } from './components/ExpenseModal';
-import { LoginModal } from './components/LoginModal';
 import { AuditLogsView, formatExactDateTime } from './components/AuditLogsView';
 import { SettingsView } from './components/SettingsView';
 
@@ -33,18 +36,25 @@ export default function App() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [currentUserId, setCurrentUserId] = useState<string>(() => {
-    return localStorage.getItem('sagesplit_active_user_id') || 'usr-admin';
+  // Require explicit login before accessing anything
+  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(() => {
+    return sessionStorage.getItem('sagesplit_auth_user_id') || null;
   });
+
+  // Login screen state
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginSubmitting, setLoginSubmitting] = useState(false);
 
   const [activeGroupId, setActiveGroupId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<ActiveTab>('expenses');
 
-  // Inline new group input
+  // Inline new group input (Admin only)
   const [creatingGroupInline, setCreatingGroupInline] = useState(false);
   const [inlineGroupName, setInlineGroupName] = useState('');
 
-  // Modals
+  // Expense Modal
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseEntry | null>(null);
   const [prefillSettlement, setPrefillSettlement] = useState<{
@@ -52,7 +62,6 @@ export default function App() {
     toUserId: string;
     amount: number;
   } | null>(null);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -111,39 +120,39 @@ export default function App() {
     };
   }, [applyServerState]);
 
-  // Keep activeGroupId pointed to a valid group when groups exist
+  const currentUser = useMemo<UserAccount | null>(() => {
+    if (!authenticatedUserId) return null;
+    return users.find((u) => u.id === authenticatedUserId) || null;
+  }, [users, authenticatedUserId]);
+
+  const isAdmin = currentUser?.role === 'admin';
+
+  // Filter groups visible to the logged-in user (Admins see all groups; Members see groups they are assigned to)
+  const visibleGroups = useMemo(() => {
+    if (!currentUser) return [];
+    if (currentUser.role === 'admin') return groups;
+    return groups.filter((g) => g.memberUserIds.includes(currentUser.id));
+  }, [groups, currentUser]);
+
   useEffect(() => {
-    if (groups.length === 0) {
+    if (visibleGroups.length === 0) {
       setActiveGroupId('');
-    } else if (!groups.some((g) => g.id === activeGroupId)) {
-      setActiveGroupId(groups[0].id);
+    } else if (!visibleGroups.some((g) => g.id === activeGroupId)) {
+      setActiveGroupId(visibleGroups[0].id);
     }
-  }, [groups, activeGroupId]);
-
-  const currentUser = useMemo<UserAccount>(() => {
-    const found = users.find((u) => u.id === currentUserId);
-    if (found) return found;
-    return (
-      users[0] || {
-        id: 'usr-admin',
-        username: 'admin',
-        displayName: 'Admin',
-        role: 'admin',
-        avatarColor: '#0F172A',
-        createdAt: new Date().toISOString(),
-        active: true,
-      }
-    );
-  }, [users, currentUserId]);
-
-  useEffect(() => {
-    localStorage.setItem('sagesplit_active_user_id', currentUser.id);
-  }, [currentUser.id]);
+  }, [visibleGroups, activeGroupId]);
 
   const activeGroup = useMemo(
-    () => groups.find((g) => g.id === activeGroupId) || null,
-    [groups, activeGroupId]
+    () => visibleGroups.find((g) => g.id === activeGroupId) || null,
+    [visibleGroups, activeGroupId]
   );
+
+  // Users assigned to the currently selected group
+  const groupMembers = useMemo(() => {
+    if (!activeGroup) return [];
+    const assigned = users.filter((u) => activeGroup.memberUserIds.includes(u.id));
+    return assigned.length > 0 ? assigned : users;
+  }, [users, activeGroup]);
 
   const groupExpenses = useMemo(
     () => expenses.filter((e) => e.groupId === activeGroupId),
@@ -151,30 +160,58 @@ export default function App() {
   );
 
   const balanceData = useMemo(
-    () => calculateRealTimeBalances(users, groupExpenses),
-    [users, groupExpenses]
+    () => calculateRealTimeBalances(groupMembers, groupExpenses),
+    [groupMembers, groupExpenses]
   );
 
   const userMap = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
 
-  // --- API Handlers ---
+  // --- Auth Handlers ---
 
-  const handleAuthenticate = async (username: string, password: string) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Authentication failed.');
-    setCurrentUserId(data.user.id);
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    setLoginSubmitting(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Invalid username or password.');
+      }
+      sessionStorage.setItem('sagesplit_auth_user_id', data.user.id);
+      setAuthenticatedUserId(data.user.id);
+      setLoginUsername('');
+      setLoginPassword('');
+      setActiveTab('expenses');
+    } catch (err: any) {
+      setLoginError(err?.message || 'Invalid username or password.');
+    } finally {
+      setLoginSubmitting(false);
+    }
   };
 
+  const handleLogout = () => {
+    sessionStorage.removeItem('sagesplit_auth_user_id');
+    setAuthenticatedUserId(null);
+    setLoginError(null);
+  };
+
+  // --- API Handlers ---
+
   const handleCreateGroup = async (name: string) => {
+    if (!currentUser) return;
     const res = await fetch('/api/groups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, actorUserId: currentUser.id }),
+      body: JSON.stringify({
+        name,
+        memberUserIds: users.map((u) => u.id),
+        actorUserId: currentUser.id,
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to create group.');
@@ -192,6 +229,7 @@ export default function App() {
   };
 
   const handleDeleteGroup = async (id: string) => {
+    if (!currentUser) return;
     await fetch(`/api/groups/${id}?actorUserId=${currentUser.id}`, {
       method: 'DELETE',
     });
@@ -207,7 +245,8 @@ export default function App() {
     splits: ExpenseSplit[];
     isSettlement: boolean;
   }) => {
-    if (!activeGroupId) throw new Error('Please create or select an expense group first.');
+    if (!currentUser) throw new Error('Not authenticated.');
+    if (!activeGroupId) throw new Error('Please select an expense group first.');
     const isEdit = Boolean(payload.id);
     const url = isEdit ? `/api/expenses/${payload.id}` : '/api/expenses';
     const method = isEdit ? 'PUT' : 'POST';
@@ -226,7 +265,22 @@ export default function App() {
   };
 
   const handleDeleteExpense = async (expenseId: string) => {
+    if (!currentUser) return;
     await fetch(`/api/expenses/${expenseId}?actorUserId=${currentUser.id}`, {
+      method: 'DELETE',
+    });
+  };
+
+  const handleDeleteLog = async (logId: string) => {
+    if (!currentUser) return;
+    await fetch(`/api/logs/${logId}?actorUserId=${currentUser.id}`, {
+      method: 'DELETE',
+    });
+  };
+
+  const handleClearAllLogs = async () => {
+    if (!currentUser) return;
+    await fetch(`/api/logs?actorUserId=${currentUser.id}`, {
       method: 'DELETE',
     });
   };
@@ -236,7 +290,9 @@ export default function App() {
     username: string;
     password: string;
     role: UserRole;
+    groupIds: string[];
   }) => {
+    if (!currentUser) return;
     const res = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -253,8 +309,10 @@ export default function App() {
       username?: string;
       password?: string;
       role?: UserRole;
+      groupIds?: string[];
     }
   ) => {
+    if (!currentUser) return;
     const res = await fetch(`/api/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -265,20 +323,84 @@ export default function App() {
   };
 
   const handleDeleteUser = async (id: string) => {
+    if (!currentUser) return;
     const res = await fetch(`/api/users/${id}?actorUserId=${currentUser.id}`, {
       method: 'DELETE',
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to remove user.');
-    if (id === currentUser.id && users.length > 0) {
-      const fallback = users.find((u) => u.id !== id);
-      if (fallback) setCurrentUserId(fallback.id);
-    }
   };
+
+  // --- Full-Screen Login Gate before accessing anything ---
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="border-b border-slate-200 px-6 py-5 flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white shrink-0">
+              <ArrowLeftRight className="h-4 w-4 text-emerald-400" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold tracking-tight text-slate-900">SageSplit</h1>
+              <p className="text-xs text-slate-500">Sign in to access shared expenses</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleLoginSubmit} className="p-6 space-y-4">
+            {loginError && (
+              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Username</label>
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  placeholder="Enter username"
+                  className="w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Password</label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <input
+                  type="password"
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3.5 py-2 text-sm font-mono text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loginSubmitting}
+              className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            >
+              {loginSubmitting ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-      {/* Clean Top Bar (3 Zones: Brand with Icon — Navigation Links — User Switch) */}
+      {/* Top Bar */}
       <header className="flex items-center justify-between gap-8 px-6 py-3.5 border-b border-slate-200 bg-white">
         {/* Zone 1: Brand with Icon */}
         <div className="flex items-center gap-2.5 whitespace-nowrap shrink-0">
@@ -288,38 +410,59 @@ export default function App() {
           <span className="text-lg font-bold tracking-tight text-slate-900">SageSplit</span>
         </div>
 
-        {/* Zone 2: Clean Single-Line Nav Links */}
+        {/* Zone 2: Navigation Links */}
         <nav className="flex items-center gap-6 text-sm font-medium">
-          {(
-            [
-              { id: 'expenses', label: 'Expenses' },
-              { id: 'logs', label: 'Logs' },
-              { id: 'settings', label: 'Settings' },
-            ] as const
-          ).map((tab) => (
+          <button
+            type="button"
+            onClick={() => setActiveTab('expenses')}
+            className={`py-1 transition-colors whitespace-nowrap shrink-0 ${
+              activeTab === 'expenses'
+                ? 'text-slate-900 font-semibold border-b-2 border-slate-900'
+                : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            Expenses
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('logs')}
+            className={`py-1 transition-colors whitespace-nowrap shrink-0 ${
+              activeTab === 'logs'
+                ? 'text-slate-900 font-semibold border-b-2 border-slate-900'
+                : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            Logs
+          </button>
+          {isAdmin && (
             <button
-              key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab('settings')}
               className={`py-1 transition-colors whitespace-nowrap shrink-0 ${
-                activeTab === tab.id
+                activeTab === 'settings'
                   ? 'text-slate-900 font-semibold border-b-2 border-slate-900'
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              {tab.label}
+              Settings
             </button>
-          ))}
+          )}
         </nav>
 
-        {/* Zone 3: Active User / Sign In */}
+        {/* Zone 3: Active User & Log Out */}
         <div className="flex items-center gap-3 shrink-0">
+          <span className="text-xs text-slate-600 hidden sm:inline">
+            <span className="font-medium text-slate-900">{currentUser.displayName}</span>
+            <span className="text-slate-400 mx-1">·</span>
+            <span>{isAdmin ? 'Admin' : 'User'}</span>
+          </span>
           <button
             type="button"
-            onClick={() => setLoginModalOpen(true)}
-            className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0"
+            onClick={handleLogout}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0"
           >
-            {currentUser.displayName} (@{currentUser.username}) · Switch
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Log Out</span>
           </button>
         </div>
       </header>
@@ -339,11 +482,15 @@ export default function App() {
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-medium text-slate-500 mr-1">Group:</span>
-                    {groups.length === 0 ? (
-                      <span className="text-xs text-slate-500">No groups created yet</span>
+                    {visibleGroups.length === 0 ? (
+                      <span className="text-xs text-slate-500">
+                        {isAdmin
+                          ? 'No groups created yet'
+                          : 'You have not been added to any expense groups yet'}
+                      </span>
                     ) : (
                       <div className="flex flex-wrap items-center gap-1.5">
-                        {groups.map((g) => (
+                        {visibleGroups.map((g) => (
                           <button
                             key={g.id}
                             type="button"
@@ -361,72 +508,77 @@ export default function App() {
                     )}
                   </div>
 
-                  <div>
-                    {creatingGroupInline ? (
-                      <form onSubmit={handleInlineCreateGroup} className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          autoFocus
-                          required
-                          value={inlineGroupName}
-                          onChange={(e) => setInlineGroupName(e.target.value)}
-                          placeholder="Group name (e.g. Holiday)"
-                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-slate-900 focus:outline-none"
-                        />
-                        <button
-                          type="submit"
-                          className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
-                        >
-                          Add
-                        </button>
+                  {isAdmin && (
+                    <div>
+                      {creatingGroupInline ? (
+                        <form onSubmit={handleInlineCreateGroup} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            autoFocus
+                            required
+                            value={inlineGroupName}
+                            onChange={(e) => setInlineGroupName(e.target.value)}
+                            placeholder="Group name (e.g. Holiday)"
+                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-slate-900 focus:outline-none"
+                          />
+                          <button
+                            type="submit"
+                            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
+                          >
+                            Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCreatingGroupInline(false)}
+                            className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs text-slate-600"
+                          >
+                            Cancel
+                          </button>
+                        </form>
+                      ) : (
                         <button
                           type="button"
-                          onClick={() => setCreatingGroupInline(false)}
-                          className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs text-slate-600"
+                          onClick={() => setCreatingGroupInline(true)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap"
                         >
-                          Cancel
+                          <FolderPlus className="h-3.5 w-3.5" />
+                          <span>New Group</span>
                         </button>
-                      </form>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setCreatingGroupInline(true)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap"
-                      >
-                        <FolderPlus className="h-3.5 w-3.5" />
-                        <span>New Group</span>
-                      </button>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Empty Group State */}
                 {!activeGroup ? (
                   <div className="rounded-xl border border-slate-200 bg-white p-12 text-center space-y-3">
                     <h2 className="text-base font-semibold text-slate-900">
-                      Create your first expense group
+                      {isAdmin ? 'Create your first expense group' : 'No expense groups assigned'}
                     </h2>
                     <p className="text-xs text-slate-500 max-w-md mx-auto">
-                      Create a group for a holiday, trip, or shared household, and add users in the
-                      Settings tab to start splitting expenses.
+                      {isAdmin
+                        ? 'Create a group for a holiday, trip, or shared household, and add users in the Settings tab to start splitting expenses.'
+                        : 'Ask your administrator to add your user account to an expense group.'}
                     </p>
-                    <div className="flex items-center justify-center gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setCreatingGroupInline(true)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800"
-                      >
-                        <FolderPlus className="h-3.5 w-3.5" />
-                        <span>Create Expense Group</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('settings')}
-                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                      >
-                        Manage Users in Settings
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="flex items-center justify-center gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setCreatingGroupInline(true)}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800"
+                        >
+                          <FolderPlus className="h-3.5 w-3.5" />
+                          <span>Create Expense Group</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('settings')}
+                          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                          Manage Users & Groups
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -489,27 +641,31 @@ export default function App() {
                                     ${exp.amount.toFixed(2)}
                                   </span>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setEditingExpense(exp);
-                                      setPrefillSettlement(null);
-                                      setExpenseModalOpen(true);
-                                    }}
-                                    className="rounded border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                                    title="Edit"
-                                  >
-                                    <Edit3 className="h-3.5 w-3.5" />
-                                  </button>
+                                  {isAdmin && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingExpense(exp);
+                                          setPrefillSettlement(null);
+                                          setExpenseModalOpen(true);
+                                        }}
+                                        className="rounded border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                                        title="Edit"
+                                      >
+                                        <Edit3 className="h-3.5 w-3.5" />
+                                      </button>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteExpense(exp.id)}
-                                    className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteExpense(exp.id)}
+                                        className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                        title="Delete"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -583,7 +739,7 @@ export default function App() {
                           <h2 className="text-sm font-semibold text-slate-900">Member Balances</h2>
                         </div>
                         <div className="divide-y divide-slate-200">
-                          {users.map((u) => {
+                          {groupMembers.map((u) => {
                             const net = balanceData.summaries[u.id]?.netBalance || 0;
                             return (
                               <div
@@ -615,9 +771,16 @@ export default function App() {
             )}
 
             {/* TAB 2: ACTIVITY LOGS */}
-            {activeTab === 'logs' && <AuditLogsView logs={logs} />}
+            {activeTab === 'logs' && (
+              <AuditLogsView
+                logs={logs}
+                isAdmin={isAdmin}
+                onDeleteLog={handleDeleteLog}
+                onClearAllLogs={handleClearAllLogs}
+              />
+            )}
 
-            {/* TAB 3: SETTINGS (GROUPS & USERS) */}
+            {/* TAB 3: SETTINGS (ADMIN ONLY) */}
             {activeTab === 'settings' && (
               <SettingsView
                 users={users}
@@ -628,7 +791,6 @@ export default function App() {
                 onDeleteUser={handleDeleteUser}
                 onCreateGroup={handleCreateGroup}
                 onDeleteGroup={handleDeleteGroup}
-                onSwitchUserDirect={(user) => setCurrentUserId(user.id)}
               />
             )}
           </>
@@ -638,20 +800,11 @@ export default function App() {
       <ExpenseModal
         isOpen={expenseModalOpen}
         onClose={() => setExpenseModalOpen(false)}
-        users={users}
+        users={groupMembers}
         currentUser={currentUser}
         editingExpense={editingExpense}
         prefillSettlement={prefillSettlement}
         onSave={handleSaveExpense}
-      />
-
-      <LoginModal
-        isOpen={loginModalOpen}
-        onClose={() => setLoginModalOpen(false)}
-        users={users}
-        currentUser={currentUser}
-        onAuthenticate={handleAuthenticate}
-        allowDismiss={true}
       />
     </div>
   );

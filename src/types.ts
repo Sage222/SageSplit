@@ -14,6 +14,7 @@ export interface UserAccount {
 export interface ExpenseGroup {
   id: string;
   name: string;
+  memberUserIds: string[];
   createdAt: string;
   createdByUserId: string;
 }
@@ -49,6 +50,7 @@ export type AuditActionType =
   | 'EXPENSE_DELETED'
   | 'SETTLEMENT_RECORDED'
   | 'GROUP_CREATED'
+  | 'GROUP_UPDATED'
   | 'GROUP_DELETED'
   | 'USER_CREATED'
   | 'USER_UPDATED'
