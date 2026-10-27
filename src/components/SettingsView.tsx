@@ -177,29 +177,29 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Expense Groups Section */}
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <div className="border-b border-slate-200 px-5 py-4">
+        <div className="border-b border-slate-200 px-4 sm:px-5 py-4">
           <h2 className="text-sm font-semibold text-slate-900">Expense Groups</h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Create expense groups for individual holidays, trips, or events.
           </p>
         </div>
 
-        <div className="p-5 space-y-4">
-          <form onSubmit={handleCreateGroupSubmit} className="flex gap-2">
+        <div className="p-4 sm:p-5 space-y-4">
+          <form onSubmit={handleCreateGroupSubmit} className="flex flex-col sm:flex-row gap-2.5">
             <input
               type="text"
               required
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
-              placeholder="e.g. Summer Holiday, Japan Trip, Weekend Cabin"
-              className="flex-1 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
+              placeholder="e.g. Summer Holiday, Japan Trip"
+              className="flex-1 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
             />
             <button
               type="submit"
               disabled={creatingGroup}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50 whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2.5 sm:py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50 whitespace-nowrap"
             >
-              <FolderPlus className="h-3.5 w-3.5" />
+              <FolderPlus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
               <span>Create Group</span>
             </button>
           </form>
@@ -214,21 +214,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 return (
                   <div
                     key={g.id}
-                    className="flex items-center justify-between px-4 py-2.5 text-sm"
+                    className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
                   >
-                    <div>
-                      <span className="font-medium text-slate-900">{g.name}</span>
-                      <span className="text-xs text-slate-500 ml-2">
-                        · {memberNames || 'No users assigned'}
-                      </span>
+                    <div className="min-w-0">
+                      <div className="font-medium text-slate-900 truncate">{g.name}</div>
+                      <div className="text-xs text-slate-500 truncate mt-0.5">
+                        {memberNames || 'No users assigned'}
+                      </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => onDeleteGroup(g.id)}
-                      className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
                       title="Delete group"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 );
@@ -240,19 +240,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* User Accounts & Group Assignment Section */}
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <div className="border-b border-slate-200 px-5 py-4">
+        <div className="border-b border-slate-200 px-4 sm:px-5 py-4">
           <h2 className="text-sm font-semibold text-slate-900">
             User Accounts, Passwords & Group Assignments
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Create user accounts and assign specific users to specific expense groups.
+            Create user accounts and tap any group button to assign or remove users.
           </p>
         </div>
 
-        <div className="p-5 space-y-5">
+        <div className="p-4 sm:p-5 space-y-5">
           <form
             onSubmit={handleCreateUserSubmit}
-            className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3"
+            className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3.5"
           >
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
               <div>
@@ -263,7 +263,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   value={newDisplayName}
                   onChange={(e) => setNewDisplayName(e.target.value)}
                   placeholder="Name"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 sm:py-1.5 text-base sm:text-xs text-slate-900 focus:border-slate-900 focus:outline-none"
                 />
               </div>
 
@@ -275,7 +275,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
                   placeholder="username"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono text-slate-900 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 sm:py-1.5 text-base sm:text-xs font-mono text-slate-900 focus:border-slate-900 focus:outline-none"
                 />
               </div>
 
@@ -287,7 +287,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="password"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono text-slate-900 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 sm:py-1.5 text-base sm:text-xs font-mono text-slate-900 focus:border-slate-900 focus:outline-none"
                 />
               </div>
 
@@ -296,7 +296,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as UserRole)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 sm:py-1.5 text-base sm:text-xs text-slate-900 focus:border-slate-900 focus:outline-none"
                 >
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
@@ -307,9 +307,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <button
                   type="submit"
                   disabled={creatingUser}
-                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2.5 sm:py-1.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
                 >
-                  <UserPlus className="h-3.5 w-3.5" />
+                  <UserPlus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                   <span>Add User</span>
                 </button>
               </div>
@@ -333,13 +333,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             : [...prev, g.id]
                         )
                       }
-                      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                         selected
                           ? 'border-slate-900 bg-slate-900 text-white'
                           : 'border-slate-300 bg-white text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      {selected && <Check className="h-3 w-3" />}
+                      {selected && <Check className="h-3.5 w-3.5" />}
                       <span>{g.name}</span>
                     </button>
                   );
@@ -348,7 +348,173 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             )}
           </form>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          {/* Mobile Stacked Cards (shown on phones < 768px) */}
+          <div className="space-y-3 md:hidden">
+            {users.map((u) => {
+              const isEditing = editingUserId === u.id;
+              const showPw = Boolean(visiblePasswords[u.id]);
+              const isCurrent = u.id === currentUser.id;
+              const userGroupIds = getUserGroupIds(u.id);
+
+              return (
+                <div
+                  key={u.id}
+                  className="rounded-xl border border-slate-200 bg-white p-4 space-y-3"
+                >
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 gap-2.5">
+                        <div>
+                          <label className="block text-xs text-slate-500 mb-1">Name</label>
+                          <input
+                            type="text"
+                            value={editDisplayName}
+                            onChange={(e) => setEditDisplayName(e.target.value)}
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-500 mb-1">Username</label>
+                          <input
+                            type="text"
+                            value={editUsername}
+                            onChange={(e) => setEditUsername(e.target.value)}
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-500 mb-1">Password</label>
+                          <input
+                            type="text"
+                            value={editPassword}
+                            onChange={(e) => setEditPassword(e.target.value)}
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-500 mb-1">Role</label>
+                          <select
+                            value={editRole}
+                            onChange={(e) => setEditRole(e.target.value as UserRole)}
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base"
+                          >
+                            <option value="member">Member</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingUserId(null)}
+                          className="rounded-lg border border-slate-300 px-3.5 py-2 text-xs font-medium text-slate-700"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveUserEdit(u.id)}
+                          className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white"
+                        >
+                          Save User
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900">
+                            {u.displayName}
+                            {isCurrent ? ' (You)' : ''}
+                          </div>
+                          <div className="text-xs text-slate-500 font-mono mt-0.5">
+                            @{u.username} · {u.role === 'admin' ? 'Admin' : 'Member'}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => startEditingUser(u)}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100"
+                            title="Edit user"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          {users.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => onDeleteUser(u.id)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                              title="Delete user"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs">
+                        <span className="text-slate-500">Password:</span>
+                        <div className="inline-flex items-center gap-2 font-mono">
+                          <span>{showPw ? u.password : '••••••••'}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setVisiblePasswords((prev) => ({
+                                ...prev,
+                                [u.id]: !prev[u.id],
+                              }))
+                            }
+                            className="p-1 text-slate-500 hover:text-slate-900"
+                          >
+                            {showPw ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div className="text-xs text-slate-500">Assigned Expense Groups:</div>
+                        {groups.length === 0 ? (
+                          <div className="text-xs text-slate-400">No groups created yet</div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5">
+                            {groups.map((g) => {
+                              const isMember = userGroupIds.includes(g.id);
+                              return (
+                                <button
+                                  key={g.id}
+                                  type="button"
+                                  onClick={() => handleToggleUserGroupDirect(u.id, g.id)}
+                                  className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                                    isMember
+                                      ? 'border-slate-900 bg-slate-900 text-white'
+                                      : 'border-slate-200 bg-white text-slate-600'
+                                  }`}
+                                >
+                                  {isMember && <Check className="h-3 w-3" />}
+                                  <span>{g.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table (shown on md+ screens) */}
+          <div className="hidden md:block overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium text-slate-500">
@@ -446,7 +612,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         )}
                       </td>
 
-                      {/* Expense Group Assignment directly on User Account */}
                       <td className="py-2.5 px-4 align-top">
                         {groups.length === 0 ? (
                           <span className="text-xs text-slate-400">No groups created</span>
@@ -476,11 +641,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                                       ? 'border-slate-900 bg-slate-900 text-white'
                                       : 'border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-900'
                                   }`}
-                                  title={
-                                    isMember
-                                      ? `Remove ${u.displayName} from ${g.name}`
-                                      : `Add ${u.displayName} to ${g.name}`
-                                  }
                                 >
                                   {isMember && <Check className="h-2.5 w-2.5" />}
                                   <span>{g.name}</span>

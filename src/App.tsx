@@ -11,6 +11,9 @@ import {
   User,
   LogOut,
   AlertCircle,
+  Receipt,
+  History,
+  Settings,
 } from 'lucide-react';
 import {
   UserAccount,
@@ -127,7 +130,6 @@ export default function App() {
 
   const isAdmin = currentUser?.role === 'admin';
 
-  // Filter groups visible to the logged-in user (Admins see all groups; Members see groups they are assigned to)
   const visibleGroups = useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.role === 'admin') return groups;
@@ -147,7 +149,6 @@ export default function App() {
     [visibleGroups, activeGroupId]
   );
 
-  // Users assigned to the currently selected group
   const groupMembers = useMemo(() => {
     if (!activeGroup) return [];
     const assigned = users.filter((u) => activeGroup.memberUserIds.includes(u.id));
@@ -334,11 +335,11 @@ export default function App() {
   // --- Full-Screen Login Gate before accessing anything ---
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="min-h-dvh bg-slate-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="border-b border-slate-200 px-6 py-5 flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white shrink-0">
-              <ArrowLeftRight className="h-4 w-4 text-emerald-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shrink-0">
+              <ArrowLeftRight className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
               <h1 className="text-base font-bold tracking-tight text-slate-900">SageSplit</h1>
@@ -357,15 +358,17 @@ export default function App() {
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1.5">Username</label>
               <div className="relative">
-                <User className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <User className="pointer-events-none absolute left-3.5 top-3 sm:top-2.5 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   required
                   autoFocus
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
                   placeholder="Enter username"
-                  className="w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
                 />
               </div>
             </div>
@@ -373,14 +376,14 @@ export default function App() {
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1.5">Password</label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <Lock className="pointer-events-none absolute left-3.5 top-3 sm:top-2.5 h-4 w-4 text-slate-400" />
                 <input
                   type="password"
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   placeholder="Enter password"
-                  className="w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3.5 py-2 text-sm font-mono text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-3.5 py-2.5 sm:py-2 text-base sm:text-sm font-mono text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
                 />
               </div>
             </div>
@@ -388,7 +391,7 @@ export default function App() {
             <button
               type="submit"
               disabled={loginSubmitting}
-              className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+              className="w-full rounded-xl bg-slate-900 px-4 py-3 sm:py-2.5 text-sm sm:text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
             >
               {loginSubmitting ? 'Signing in...' : 'Sign In'}
             </button>
@@ -399,19 +402,21 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+    <div className="min-h-dvh bg-slate-50 text-slate-900 flex flex-col">
       {/* Top Bar */}
-      <header className="flex items-center justify-between gap-8 px-6 py-3.5 border-b border-slate-200 bg-white">
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-4 sm:gap-8 px-4 sm:px-6 h-14 border-b border-slate-200 bg-white/95 backdrop-blur-md">
         {/* Zone 1: Brand with Icon */}
         <div className="flex items-center gap-2.5 whitespace-nowrap shrink-0">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
             <ArrowLeftRight className="h-4 w-4 text-emerald-400" />
           </div>
-          <span className="text-lg font-bold tracking-tight text-slate-900">SageSplit</span>
+          <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
+            SageSplit
+          </span>
         </div>
 
-        {/* Zone 2: Navigation Links */}
-        <nav className="flex items-center gap-6 text-sm font-medium">
+        {/* Zone 2: Desktop Navigation Links (hidden on phones, shown on sm+) */}
+        <nav className="hidden sm:flex items-center gap-6 text-sm font-medium">
           <button
             type="button"
             onClick={() => setActiveTab('expenses')}
@@ -450,11 +455,11 @@ export default function App() {
         </nav>
 
         {/* Zone 3: Active User & Log Out */}
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="text-xs text-slate-600 hidden sm:inline">
+        <div className="flex items-center gap-2.5 shrink-0 min-w-0">
+          <span className="text-xs text-slate-600 truncate max-w-[120px] sm:max-w-none">
             <span className="font-medium text-slate-900">{currentUser.displayName}</span>
-            <span className="text-slate-400 mx-1">·</span>
-            <span>{isAdmin ? 'Admin' : 'User'}</span>
+            <span className="hidden md:inline text-slate-400 mx-1">·</span>
+            <span className="hidden md:inline">{isAdmin ? 'Admin' : 'User'}</span>
           </span>
           <button
             type="button"
@@ -467,8 +472,8 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-6 space-y-6">
+      {/* Main Container (padded at bottom on phones for fixed bottom navigation bar) */}
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 pb-24 sm:pb-8 space-y-5 sm:space-y-6">
         {loading ? (
           <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-xs text-slate-500">
             Loading...
@@ -477,9 +482,9 @@ export default function App() {
           <>
             {/* TAB 1: EXPENSES & BALANCES */}
             {activeTab === 'expenses' && (
-              <div className="space-y-6">
+              <div className="space-y-5 sm:space-y-6">
                 {/* Group Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:px-5 sm:py-3.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-medium text-slate-500 mr-1">Group:</span>
                     {visibleGroups.length === 0 ? (
@@ -495,7 +500,7 @@ export default function App() {
                             key={g.id}
                             type="button"
                             onClick={() => setActiveGroupId(g.id)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                            className={`px-3.5 py-2 sm:py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                               activeGroupId === g.id
                                 ? 'bg-slate-900 text-white'
                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -509,9 +514,12 @@ export default function App() {
                   </div>
 
                   {isAdmin && (
-                    <div>
+                    <div className="w-full sm:w-auto">
                       {creatingGroupInline ? (
-                        <form onSubmit={handleInlineCreateGroup} className="flex items-center gap-2">
+                        <form
+                          onSubmit={handleInlineCreateGroup}
+                          className="flex items-center gap-2 w-full sm:w-auto"
+                        >
                           <input
                             type="text"
                             autoFocus
@@ -519,18 +527,18 @@ export default function App() {
                             value={inlineGroupName}
                             onChange={(e) => setInlineGroupName(e.target.value)}
                             placeholder="Group name (e.g. Holiday)"
-                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-slate-900 focus:outline-none"
+                            className="flex-1 sm:w-44 rounded-lg border border-slate-300 px-3 py-2 sm:py-1.5 text-base sm:text-xs focus:border-slate-900 focus:outline-none"
                           />
                           <button
                             type="submit"
-                            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
+                            className="rounded-lg bg-slate-900 px-3.5 py-2 sm:py-1.5 text-xs font-medium text-white hover:bg-slate-800 shrink-0"
                           >
                             Add
                           </button>
                           <button
                             type="button"
                             onClick={() => setCreatingGroupInline(false)}
-                            className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs text-slate-600"
+                            className="rounded-lg border border-slate-300 px-3 py-2 sm:py-1.5 text-xs text-slate-600 shrink-0"
                           >
                             Cancel
                           </button>
@@ -539,7 +547,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => setCreatingGroupInline(true)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap"
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 sm:py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap"
                         >
                           <FolderPlus className="h-3.5 w-3.5" />
                           <span>New Group</span>
@@ -551,7 +559,7 @@ export default function App() {
 
                 {/* Empty Group State */}
                 {!activeGroup ? (
-                  <div className="rounded-xl border border-slate-200 bg-white p-12 text-center space-y-3">
+                  <div className="rounded-xl border border-slate-200 bg-white p-8 sm:p-12 text-center space-y-3">
                     <h2 className="text-base font-semibold text-slate-900">
                       {isAdmin ? 'Create your first expense group' : 'No expense groups assigned'}
                     </h2>
@@ -561,19 +569,19 @@ export default function App() {
                         : 'Ask your administrator to add your user account to an expense group.'}
                     </p>
                     {isAdmin && (
-                      <div className="flex items-center justify-center gap-3 pt-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 pt-2">
                         <button
                           type="button"
                           onClick={() => setCreatingGroupInline(true)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800"
+                          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-medium text-white hover:bg-slate-800"
                         >
-                          <FolderPlus className="h-3.5 w-3.5" />
+                          <FolderPlus className="h-4 w-4" />
                           <span>Create Expense Group</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setActiveTab('settings')}
-                          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                         >
                           Manage Users & Groups
                         </button>
@@ -581,15 +589,15 @@ export default function App() {
                     )}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                  <div className="grid grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-12">
                     {/* Left Column: Expenses List (7 cols) */}
                     <div className="lg:col-span-7 rounded-xl border border-slate-200 bg-white overflow-hidden">
-                      <div className="border-b border-slate-200 px-5 py-4 flex items-center justify-between">
-                        <div>
-                          <h2 className="text-sm font-semibold text-slate-900">
+                      <div className="border-b border-slate-200 px-4 sm:px-5 py-3.5 sm:py-4 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <h2 className="text-sm font-semibold text-slate-900 truncate">
                             {activeGroup.name} — Expenses
                           </h2>
-                          <p className="text-xs text-slate-500 font-mono tabular-nums">
+                          <p className="text-xs text-slate-500 font-mono tabular-nums mt-0.5">
                             Total spent: ${balanceData.totalGroupSpend.toFixed(2)}
                           </p>
                         </div>
@@ -601,9 +609,9 @@ export default function App() {
                             setPrefillSettlement(null);
                             setExpenseModalOpen(true);
                           }}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-medium text-white hover:bg-slate-800 whitespace-nowrap"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2.5 sm:py-2 text-xs font-medium text-white hover:bg-slate-800 whitespace-nowrap shrink-0"
                         >
-                          <Plus className="h-3.5 w-3.5" />
+                          <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                           <span>Add Expense</span>
                         </button>
                       </div>
@@ -620,24 +628,27 @@ export default function App() {
                             return (
                               <div
                                 key={exp.id}
-                                className="px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/70"
+                                className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/70"
                               >
                                 <div className="min-w-0 space-y-0.5">
-                                  <div className="text-sm font-medium text-slate-900 truncate">
+                                  <div className="text-sm font-medium text-slate-900 break-words">
                                     {exp.title}
                                   </div>
-                                  <div className="text-xs text-slate-500">
-                                    Paid by{' '}
-                                    <span className="font-medium text-slate-700">
-                                      {payer?.displayName || exp.paidByUserId}
-                                    </span>{' '}
-                                    · <span className="font-mono">{exp.date}</span>{' '}
+                                  <div className="text-xs text-slate-500 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                                    <span>
+                                      Paid by{' '}
+                                      <span className="font-medium text-slate-700">
+                                        {payer?.displayName || exp.paidByUserId}
+                                      </span>
+                                    </span>
+                                    <span>·</span>
+                                    <span className="font-mono">{exp.date}</span>
                                     <span className="font-mono text-slate-400">{dt.timePart}</span>
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-3 shrink-0">
-                                  <span className="text-sm font-mono tabular-nums font-semibold text-slate-900">
+                                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                                  <span className="text-sm font-mono tabular-nums font-semibold text-slate-900 mr-1">
                                     ${exp.amount.toFixed(2)}
                                   </span>
 
@@ -650,19 +661,19 @@ export default function App() {
                                           setPrefillSettlement(null);
                                           setExpenseModalOpen(true);
                                         }}
-                                        className="rounded border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                                        className="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                                         title="Edit"
                                       >
-                                        <Edit3 className="h-3.5 w-3.5" />
+                                        <Edit3 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                                       </button>
 
                                       <button
                                         type="button"
                                         onClick={() => handleDeleteExpense(exp.id)}
-                                        className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                        className="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
                                         title="Delete"
                                       >
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                        <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                                       </button>
                                     </>
                                   )}
@@ -675,10 +686,10 @@ export default function App() {
                     </div>
 
                     {/* Right Column: Real-Time Balances & Settle Up (5 cols) */}
-                    <div className="lg:col-span-5 space-y-6">
+                    <div className="lg:col-span-5 space-y-5 sm:space-y-6">
                       {/* Who Owes Whom */}
                       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-                        <div className="border-b border-slate-200 px-5 py-4">
+                        <div className="border-b border-slate-200 px-4 sm:px-5 py-3.5 sm:py-4">
                           <h2 className="text-sm font-semibold text-slate-900">Settle Up</h2>
                           <p className="text-xs text-slate-500">
                             Real-time balances for {activeGroup.name}
@@ -698,12 +709,16 @@ export default function App() {
                               return (
                                 <div
                                   key={idx}
-                                  className="px-5 py-3 flex items-center justify-between gap-2 text-xs"
+                                  className="px-4 sm:px-5 py-3 flex items-center justify-between gap-2 text-xs"
                                 >
-                                  <div className="flex items-center gap-1.5 font-medium text-slate-900 truncate">
-                                    <span>{fromU?.displayName || tr.fromUserId}</span>
+                                  <div className="flex items-center gap-1.5 font-medium text-slate-900 min-w-0">
+                                    <span className="truncate">
+                                      {fromU?.displayName || tr.fromUserId}
+                                    </span>
                                     <ArrowRight className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                                    <span>{toU?.displayName || tr.toUserId}</span>
+                                    <span className="truncate">
+                                      {toU?.displayName || tr.toUserId}
+                                    </span>
                                   </div>
 
                                   <div className="flex items-center gap-2.5 shrink-0">
@@ -721,7 +736,7 @@ export default function App() {
                                         });
                                         setExpenseModalOpen(true);
                                       }}
-                                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-colors"
+                                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-colors"
                                     >
                                       Settle
                                     </button>
@@ -735,7 +750,7 @@ export default function App() {
 
                       {/* Member Net Standing */}
                       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-                        <div className="border-b border-slate-200 px-5 py-3.5">
+                        <div className="border-b border-slate-200 px-4 sm:px-5 py-3.5">
                           <h2 className="text-sm font-semibold text-slate-900">Member Balances</h2>
                         </div>
                         <div className="divide-y divide-slate-200">
@@ -744,7 +759,7 @@ export default function App() {
                             return (
                               <div
                                 key={u.id}
-                                className="px-5 py-2.5 flex items-center justify-between text-xs"
+                                className="px-4 sm:px-5 py-3 flex items-center justify-between text-xs"
                               >
                                 <span className="font-medium text-slate-900">{u.displayName}</span>
                                 <span
@@ -796,6 +811,48 @@ export default function App() {
           </>
         )}
       </main>
+
+      {/* Mobile Bottom Tab Bar (Thumb-Zone Navigation on Phones < 640px) */}
+      <nav
+        className={`fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-white/95 backdrop-blur-md border-t border-slate-200 grid ${
+          isAdmin ? 'grid-cols-3' : 'grid-cols-2'
+        } h-16`}
+      >
+        <button
+          type="button"
+          onClick={() => setActiveTab('expenses')}
+          className={`flex flex-col items-center justify-center gap-1 transition-colors ${
+            activeTab === 'expenses' ? 'text-slate-900 font-semibold' : 'text-slate-400'
+          }`}
+        >
+          <Receipt className="h-5 w-5" />
+          <span className="text-[11px]">Expenses</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('logs')}
+          className={`flex flex-col items-center justify-center gap-1 transition-colors ${
+            activeTab === 'logs' ? 'text-slate-900 font-semibold' : 'text-slate-400'
+          }`}
+        >
+          <History className="h-5 w-5" />
+          <span className="text-[11px]">Logs</span>
+        </button>
+
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('settings')}
+            className={`flex flex-col items-center justify-center gap-1 transition-colors ${
+              activeTab === 'settings' ? 'text-slate-900 font-semibold' : 'text-slate-400'
+            }`}
+          >
+            <Settings className="h-5 w-5" />
+            <span className="text-[11px]">Settings</span>
+          </button>
+        )}
+      </nav>
 
       <ExpenseModal
         isOpen={expenseModalOpen}

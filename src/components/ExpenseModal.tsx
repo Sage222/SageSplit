@@ -282,9 +282,12 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-      <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4">
+      <div className="w-full max-w-lg rounded-t-2xl sm:rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh]">
+        {/* Mobile grab handle */}
+        <div className="w-10 h-1 bg-slate-300 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
+
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5 sm:py-4 shrink-0">
           <h2 className="text-base font-semibold text-slate-900">
             {editingExpense
               ? 'Edit Expense'
@@ -295,22 +298,23 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Close"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {!editingExpense && users.length > 1 && (
-          <div className="border-b border-slate-200 bg-slate-50 px-5 py-2.5 flex items-center gap-2">
-            <div className="inline-flex rounded-lg bg-slate-200/80 p-0.5">
+          <div className="border-b border-slate-200 bg-slate-50 px-5 py-2.5 shrink-0">
+            <div className="grid grid-cols-2 rounded-lg bg-slate-200/80 p-1">
               <button
                 type="button"
                 onClick={() => {
                   setIsSettlement(false);
                   if (title.startsWith('Settlement:')) setTitle('');
                 }}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`py-1.5 text-xs font-medium rounded-md transition-colors ${
                   !isSettlement ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
@@ -324,7 +328,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   const toU = users.find((u) => u.id === settlementReceiverId);
                   setTitle(`Settlement: ${fromU?.displayName} → ${toU?.displayName}`);
                 }}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                className={`py-1.5 text-xs font-medium rounded-md transition-colors ${
                   isSettlement ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
@@ -342,7 +346,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
               <input
@@ -351,7 +355,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={isSettlement ? 'Settlement' : 'e.g. Dinner, Hotel, Groceries'}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-slate-900 focus:border-slate-900 focus:outline-none"
               />
             </div>
 
@@ -359,13 +363,14 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               <label className="block text-xs font-medium text-slate-700 mb-1">Amount ($)</label>
               <input
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 min="0.01"
                 required
                 value={amountStr}
                 onChange={(e) => setAmountStr(e.target.value)}
                 placeholder="0.00"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-mono tabular-nums text-slate-900 focus:border-slate-900 focus:outline-none"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 sm:py-2 text-base sm:text-sm font-mono tabular-nums text-slate-900 focus:border-slate-900 focus:outline-none"
               />
             </div>
           </div>
@@ -383,7 +388,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     const toU = users.find((u) => u.id === settlementReceiverId);
                     setTitle(`Settlement: ${fromU?.displayName} → ${toU?.displayName}`);
                   }}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base sm:text-sm"
                 >
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>
@@ -393,7 +398,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 </select>
               </div>
 
-              <div className="flex items-center justify-center pt-4">
+              <div className="hidden sm:flex items-center justify-center pt-4">
                 <ArrowRight className="h-4 w-4 text-slate-500" />
               </div>
 
@@ -408,7 +413,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     const toU = users.find((u) => u.id === nextRec);
                     setTitle(`Settlement: ${fromU?.displayName} → ${toU?.displayName}`);
                   }}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base sm:text-sm"
                 >
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>
@@ -419,13 +424,13 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Paid By</label>
                 <select
                   value={paidByUserId}
                   onChange={(e) => setPaidByUserId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 sm:py-2 text-base sm:text-sm text-slate-900 focus:border-slate-900 focus:outline-none"
                 >
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>
@@ -442,7 +447,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-mono text-slate-900 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 sm:py-2 text-base sm:text-sm font-mono text-slate-900 focus:border-slate-900 focus:outline-none"
                 />
               </div>
             </div>
@@ -450,9 +455,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
           {!isSettlement && (
             <div className="space-y-2.5 pt-1">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <label className="text-xs font-medium text-slate-700">Split Method</label>
-                <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+                <div className="inline-flex rounded-lg bg-slate-100 p-1">
                   {(
                     [
                       { id: 'equal', label: 'Equal' },
@@ -464,7 +469,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                       key={mode.id}
                       type="button"
                       onClick={() => setSplitMode(mode.id)}
-                      className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                         splitMode === mode.id
                           ? 'bg-white text-slate-900 shadow-xs'
                           : 'text-slate-600 hover:text-slate-900'
@@ -485,36 +490,43 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   return (
                     <div
                       key={u.id}
-                      className="flex items-center justify-between px-3.5 py-2 text-sm"
+                      onClick={() => {
+                        if (splitMode === 'equal') toggleEqualParticipant(u.id);
+                      }}
+                      className={`flex items-center justify-between px-3.5 py-2.5 text-sm ${
+                        splitMode === 'equal' ? 'cursor-pointer active:bg-slate-50' : ''
+                      }`}
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-3 min-w-0">
                         {splitMode === 'equal' && (
-                          <button
-                            type="button"
-                            onClick={() => toggleEqualParticipant(u.id)}
-                            className={`flex h-4 w-4 items-center justify-center rounded border ${
+                          <div
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
                               isIncludedEqual
                                 ? 'border-slate-900 bg-slate-900 text-white'
                                 : 'border-slate-300 bg-white'
                             }`}
                           >
-                            {isIncludedEqual && <Check className="h-3 w-3" />}
-                          </button>
+                            {isIncludedEqual && <Check className="h-3.5 w-3.5" />}
+                          </div>
                         )}
-                        <span className="font-medium text-slate-900">{u.displayName}</span>
+                        <span className="font-medium text-slate-900 truncate">{u.displayName}</span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div
+                        className="flex items-center gap-2 shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {splitMode === 'exact' && (
                           <input
                             type="number"
+                            inputMode="decimal"
                             step="0.01"
                             min="0"
                             value={exactAmounts[u.id] ?? '0.00'}
                             onChange={(e) =>
                               setExactAmounts((prev) => ({ ...prev, [u.id]: e.target.value }))
                             }
-                            className="w-24 rounded border border-slate-300 px-2 py-1 text-right text-xs font-mono tabular-nums"
+                            className="w-24 rounded-md border border-slate-300 px-2.5 py-1.5 text-right text-base sm:text-xs font-mono tabular-nums"
                           />
                         )}
 
@@ -522,6 +534,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                           <div className="flex items-center gap-2">
                             <input
                               type="number"
+                              inputMode="decimal"
                               step="0.1"
                               min="0"
                               max="100"
@@ -529,7 +542,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                               onChange={(e) =>
                                 setPercentages((prev) => ({ ...prev, [u.id]: e.target.value }))
                               }
-                              className="w-16 rounded border border-slate-300 px-2 py-1 text-right text-xs font-mono tabular-nums"
+                              className="w-20 rounded-md border border-slate-300 px-2.5 py-1.5 text-right text-base sm:text-xs font-mono tabular-nums"
                             />
                             <span className="text-xs text-slate-400">%</span>
                             <span className="w-16 text-right text-xs font-mono tabular-nums text-slate-600">
@@ -557,18 +570,18 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2 border-t border-slate-200 pt-4">
+          <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-end gap-2.5 border-t border-slate-200 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 sm:py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              className="rounded-lg bg-slate-900 px-4 py-2.5 sm:py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
             >
               {submitting ? 'Saving...' : 'Save'}
             </button>
