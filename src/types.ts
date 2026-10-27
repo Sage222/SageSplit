@@ -11,29 +11,26 @@ export interface UserAccount {
   active: boolean;
 }
 
-export type SplitMode = 'equal' | 'exact' | 'percentage' | 'shares';
+export interface ExpenseGroup {
+  id: string;
+  name: string;
+  createdAt: string;
+  createdByUserId: string;
+}
 
-export type ExpenseCategory =
-  | 'Groceries'
-  | 'Utilities'
-  | 'Rent & Housing'
-  | 'Dining'
-  | 'Travel'
-  | 'Household'
-  | 'Settlement'
-  | 'Other';
+export type SplitMode = 'equal' | 'exact' | 'percentage';
 
 export interface ExpenseSplit {
   userId: string;
-  amount: number; // Resolved currency amount (2 decimal places)
-  shareValue?: number; // Raw percentage or share weight
+  amount: number;
+  shareValue?: number;
 }
 
 export interface ExpenseEntry {
   id: string;
+  groupId: string;
   title: string;
   amount: number;
-  category: ExpenseCategory;
   paidByUserId: string;
   date: string; // YYYY-MM-DD
   createdAt: string; // Full ISO timestamp
@@ -42,7 +39,6 @@ export interface ExpenseEntry {
   updatedByUserId: string;
   splitMode: SplitMode;
   splits: ExpenseSplit[];
-  notes: string;
   isSettlement: boolean;
   revision: number;
 }
@@ -52,12 +48,12 @@ export type AuditActionType =
   | 'EXPENSE_EDITED'
   | 'EXPENSE_DELETED'
   | 'SETTLEMENT_RECORDED'
-  | 'EXPENSE_RESTORED'
+  | 'GROUP_CREATED'
+  | 'GROUP_DELETED'
   | 'USER_CREATED'
   | 'USER_UPDATED'
   | 'PASSWORD_UPDATED'
-  | 'USER_DELETED'
-  | 'SETTINGS_UPDATED';
+  | 'USER_DELETED';
 
 export interface AuditLogChange {
   field: string;
@@ -67,7 +63,8 @@ export interface AuditLogChange {
 
 export interface AuditLogEntry {
   id: string;
-  timestamp: string; // Full ISO timestamp
+  groupId?: string;
+  timestamp: string;
   actorUserId: string;
   actorName: string;
   actorUsername: string;
@@ -76,25 +73,15 @@ export interface AuditLogEntry {
   targetTitle: string;
   summary: string;
   changes: AuditLogChange[];
-  snapshotBefore?: ExpenseEntry;
-  snapshotAfter?: ExpenseEntry;
-}
-
-export interface WorkspaceSettings {
-  workspaceName: string;
-  currencyCode: string;
-  currencySymbol: string;
-  defaultSplitMode: SplitMode;
-  allowMembersToEditAll: boolean;
 }
 
 export interface UserBalanceSummary {
   userId: string;
-  totalExpensesPaid: number; // Excluding settlement transfers
-  totalExpenseShare: number; // Excluding settlement transfers
+  totalExpensesPaid: number;
+  totalExpenseShare: number;
   settlementsPaid: number;
   settlementsReceived: number;
-  netBalance: number; // Positive = is owed money, Negative = owes money
+  netBalance: number;
 }
 
 export interface SettlementTransfer {
@@ -103,19 +90,11 @@ export interface SettlementTransfer {
   amount: number;
 }
 
-export interface PresenceUser {
-  userId: string;
-  username: string;
-  displayName: string;
-  connectedAt: string;
-}
-
 export interface LedgerStatePayload {
   users: UserAccount[];
+  groups: ExpenseGroup[];
   expenses: ExpenseEntry[];
   logs: AuditLogEntry[];
-  settings: WorkspaceSettings;
-  onlineUsers: PresenceUser[];
 }
 
 export function roundCents(value: number): number {
@@ -134,7 +113,6 @@ export function computeEqualSplits(totalAmount: number, participantUserIds: stri
     return {
       userId,
       amount: cents / 100,
-      shareValue: 1,
     };
   });
 }
@@ -167,37 +145,6 @@ export function computePercentageSplits(
   });
 }
 
-export function computeShareWeightSplits(
-  totalAmount: number,
-  shares: { userId: string; weight: number }[]
-): ExpenseSplit[] {
-  const active = shares.filter((s) => s.weight > 0);
-  if (active.length === 0) return [];
-  const totalWeight = active.reduce((acc, item) => acc + item.weight, 0);
-  if (totalWeight <= 0) return [];
-
-  const totalCents = Math.round(totalAmount * 100);
-  let allocatedCents = 0;
-
-  return active.map((item, idx) => {
-    if (idx === active.length - 1) {
-      const remaining = totalCents - allocatedCents;
-      return {
-        userId: item.userId,
-        amount: remaining / 100,
-        shareValue: item.weight,
-      };
-    }
-    const cents = Math.round((totalCents * item.weight) / totalWeight);
-    allocatedCents += cents;
-    return {
-      userId: item.userId,
-      amount: cents / 100,
-      shareValue: item.weight,
-    };
-  });
-}
-
 export function calculateRealTimeBalances(
   users: UserAccount[],
   expenses: ExpenseEntry[]
@@ -205,7 +152,6 @@ export function calculateRealTimeBalances(
   summaries: Record<string, UserBalanceSummary>;
   transfers: SettlementTransfer[];
   totalGroupSpend: number;
-  totalUnsettledDebt: number;
 } {
   const summaries: Record<string, UserBalanceSummary> = {};
 
@@ -223,7 +169,6 @@ export function calculateRealTimeBalances(
   let totalGroupSpend = 0;
 
   for (const exp of expenses) {
-    // Ensure payer exists in map even if user was later archived
     if (!summaries[exp.paidByUserId]) {
       summaries[exp.paidByUserId] = {
         userId: exp.paidByUserId,
@@ -291,7 +236,6 @@ export function calculateRealTimeBalances(
     }
   }
 
-  // Greedy minimum-transfer debt simplification in integer cents
   const debtors: { userId: string; cents: number }[] = [];
   const creditors: { userId: string; cents: number }[] = [];
 
@@ -331,14 +275,9 @@ export function calculateRealTimeBalances(
     if (creditor.cents === 0) j++;
   }
 
-  const totalUnsettledDebt = roundCents(
-    transfers.reduce((acc, t) => acc + t.amount, 0)
-  );
-
   return {
     summaries,
     transfers,
     totalGroupSpend,
-    totalUnsettledDebt,
   };
 }
