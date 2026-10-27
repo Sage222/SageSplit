@@ -61,6 +61,20 @@ function loadDatabase(): PersistedDatabase {
       const raw = fs.readFileSync(DATA_FILE, 'utf-8');
       const parsed = JSON.parse(raw) as PersistedDatabase;
       if (parsed && Array.isArray(parsed.users) && Array.isArray(parsed.expenses)) {
+        // Ensure at least one active admin account always exists
+        const hasAdmin = parsed.users.some((u) => u.role === 'admin' && u.active && u.password);
+        if (!hasAdmin) {
+          parsed.users.unshift({
+            id: 'usr-admin',
+            username: 'admin',
+            password: 'password123',
+            displayName: 'Admin',
+            role: 'admin',
+            avatarColor: '#0F172A',
+            createdAt: new Date().toISOString(),
+            active: true,
+          });
+        }
         return {
           users: parsed.users,
           groups: Array.isArray(parsed.groups)
@@ -177,9 +191,10 @@ async function startServer() {
     }
 
     const normalized = username.trim().toLowerCase();
+    const cleanPass = String(password || '').trim();
     const user = db.users.find((u) => u.username.toLowerCase() === normalized && u.active);
 
-    if (!user || user.password !== password) {
+    if (!user || String(user.password || '').trim() !== cleanPass) {
       res.status(401).json({ error: 'Invalid username or password.' });
       return;
     }

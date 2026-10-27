@@ -19,16 +19,14 @@ ENV NODE_ENV=production
 ENV PORT=3044
 ENV DATA_DIR=/app/data
 
-# Create persistent data directory for ledger & user store
-RUN mkdir -p /app/data && chown -R node:node /app
+RUN mkdir -p /app/data
 
-COPY --from=builder --chown=node:node /app/package.json ./
-COPY --from=builder --chown=node:node /app/node_modules ./node_modules
-COPY --from=builder --chown=node:node /app/dist ./dist
-COPY --from=builder --chown=node:node /app/server.ts ./server.ts
-COPY --from=builder --chown=node:node /app/src ./src
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server.ts ./server.ts
+COPY --from=builder /app/src ./src
 
-USER node
 EXPOSE 3044
 
 VOLUME ["/app/data"]
