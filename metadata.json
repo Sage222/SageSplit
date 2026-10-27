@@ -1,0 +1,6 @@
+{
+  "name": "SplitDock — Real-Time Shared Expense Ledger",
+  "description": "Self-hosted Docker-ready shared expense tracker featuring real-time balance reconciliation, full timestamped audit logs, editable transactions, and admin-managed user accounts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
