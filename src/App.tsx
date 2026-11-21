@@ -14,6 +14,7 @@ import {
   Receipt,
   History,
   Settings,
+  Download,
 } from 'lucide-react';
 import {
   UserAccount,
@@ -31,6 +32,15 @@ import { AuditLogsView, formatExactDateTime } from './components/AuditLogsView';
 import { SettingsView } from './components/SettingsView';
 
 type ActiveTab = 'expenses' | 'logs' | 'settings';
+type ExpenseFilter = 'all' | 'expenses' | 'settlements';
+
+function escapeCsvField(val: string | number): string {
+  const str = String(val ?? '').replace(/\r?\n/g, ' ');
+  if (str.includes('"') || str.includes(',') || str.includes(';')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
 
 export default function App() {
   const [users, setUsers] = useState<UserAccount[]>([]);
@@ -52,6 +62,7 @@ export default function App() {
 
   const [activeGroupId, setActiveGroupId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<ActiveTab>('expenses');
+  const [expenseFilter, setExpenseFilter] = useState<ExpenseFilter>('all');
 
   // Inline new group input (Admin only)
   const [creatingGroupInline, setCreatingGroupInline] = useState(false);
@@ -125,7 +136,20 @@ export default function App() {
 
   const currentUser = useMemo<UserAccount | null>(() => {
     if (!authenticatedUserId) return null;
-    return users.find((u) => u.id === authenticatedUserId) || null;
+    const found = users.find((u) => u.id === authenticatedUserId) || null;
+    if (!found || found.role === 'disabled') return null;
+    return found;
+  }, [users, authenticatedUserId]);
+
+  // If a logged-in user's role is changed to "disabled", clear session and show message
+  useEffect(() => {
+    if (!authenticatedUserId || users.length === 0) return;
+    const found = users.find((u) => u.id === authenticatedUserId);
+    if (found && found.role === 'disabled') {
+      sessionStorage.removeItem('sagesplit_auth_user_id');
+      setAuthenticatedUserId(null);
+      setLoginError('Your account has been disabled by an administrator.');
+    }
   }, [users, authenticatedUserId]);
 
   const isAdmin = currentUser?.role === 'admin';
@@ -159,6 +183,16 @@ export default function App() {
     () => expenses.filter((e) => e.groupId === activeGroupId),
     [expenses, activeGroupId]
   );
+
+  const filteredGroupExpenses = useMemo(() => {
+    if (expenseFilter === 'expenses') {
+      return groupExpenses.filter((e) => !e.isSettlement);
+    }
+    if (expenseFilter === 'settlements') {
+      return groupExpenses.filter((e) => e.isSettlement);
+    }
+    return groupExpenses;
+  }, [groupExpenses, expenseFilter]);
 
   const balanceData = useMemo(
     () => calculateRealTimeBalances(groupMembers, groupExpenses),
@@ -205,12 +239,19 @@ export default function App() {
 
   const handleCreateGroup = async (name: string) => {
     if (!currentUser) return;
+    // Exclude the default 'admin' system account from new expense groups if other members exist
+    const nonSystemAdminIds = users
+      .filter((u) => u.username.toLowerCase() !== 'admin')
+      .map((u) => u.id);
+    const defaultMemberIds =
+      nonSystemAdminIds.length > 0 ? nonSystemAdminIds : users.map((u) => u.id);
+
     const res = await fetch('/api/groups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name,
-        memberUserIds: users.map((u) => u.id),
+        memberUserIds: defaultMemberIds,
         actorUserId: currentUser.id,
       }),
     });
@@ -270,6 +311,143 @@ export default function App() {
     await fetch(`/api/expenses/${expenseId}?actorUserId=${currentUser.id}`, {
       method: 'DELETE',
     });
+  };
+
+  const handleExportGroupCsv = () => {
+    if (!activeGroup) return;
+
+    const lines: string[] = [];
+    lines.push(
+      ['Group Name', 'Total Group Spend ($)', 'Exported Date']
+        .map(escapeCsvField)
+        .join(',')
+    );
+    const today = new Date().toISOString().split('T')[0];
+    lines.push(
+      [activeGroup.name, balanceData.totalGroupSpend.toFixed(2), today]
+        .map(escapeCsvField)
+        .join(',')
+    );
+    lines.push('');
+
+    lines.push(
+      [
+        'Type',
+        'Date',
+        'Time',
+        'Description',
+        'Amount ($)',
+        'Paid By',
+        'Submitted By',
+        'Split Breakdown',
+      ]
+        .map(escapeCsvField)
+        .join(',')
+    );
+
+    for (const exp of groupExpenses) {
+      const payer = userMap.get(exp.paidByUserId)?.displayName || exp.paidByUserId;
+      const creator = userMap.get(exp.createdByUserId)?.displayName || exp.createdByUserId;
+      const dt = formatExactDateTime(exp.updatedAt);
+      const splitDetails = exp.splits
+        .map((s) => `${userMap.get(s.userId)?.displayName || s.userId}: $${s.amount.toFixed(2)}`)
+        .join(' | ');
+
+      lines.push(
+        [
+          exp.isSettlement ? 'Settlement' : 'Expense',
+          exp.date,
+          dt.timePart,
+          exp.title,
+          exp.amount.toFixed(2),
+          payer,
+          creator,
+          splitDetails,
+        ]
+          .map(escapeCsvField)
+          .join(',')
+      );
+    }
+
+    lines.push('');
+    lines.push(
+      [
+        'Member',
+        'Expenses Paid ($)',
+        'Expense Share ($)',
+        'Settlements Paid ($)',
+        'Settlements Received ($)',
+        'Net Balance ($)',
+      ]
+        .map(escapeCsvField)
+        .join(',')
+    );
+
+    for (const member of groupMembers) {
+      const s = balanceData.summaries[member.id];
+      if (!s) continue;
+      lines.push(
+        [
+          member.displayName,
+          s.totalExpensesPaid.toFixed(2),
+          s.totalExpenseShare.toFixed(2),
+          s.settlementsPaid.toFixed(2),
+          s.settlementsReceived.toFixed(2),
+          s.netBalance.toFixed(2),
+        ]
+          .map(escapeCsvField)
+          .join(',')
+      );
+    }
+
+    const csvContent = '\uFEFF' + lines.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const safeGroupName = activeGroup.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `sagesplit-${safeGroupName || 'group'}-${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const formatExpenseSplitSummary = (exp: ExpenseEntry): string => {
+    if (exp.isSettlement) {
+      const recId = exp.splits[0]?.userId;
+      const recName = recId ? userMap.get(recId)?.displayName || recId : 'Recipient';
+      return `Settlement paid to ${recName}`;
+    }
+
+    const splitUserIds = new Set(exp.splits.map((s) => s.userId));
+    const totalGroupCount = groupMembers.length;
+    const includedCount = exp.splits.length;
+
+    if (totalGroupCount > 0 && includedCount === totalGroupCount) {
+      return `Split among all ${totalGroupCount} members`;
+    }
+
+    const excludedMembers = groupMembers.filter((m) => !splitUserIds.has(m.id));
+    if (excludedMembers.length > 0 && excludedMembers.length <= 3 && includedCount > 3) {
+      const excludedNames = excludedMembers.map((m) => m.displayName).join(', ');
+      return `Split among ${includedCount} of ${totalGroupCount} members · Excludes ${excludedNames}`;
+    }
+
+    if (includedCount <= 5) {
+      return (
+        'Split: ' +
+        exp.splits
+          .map((s) => `${userMap.get(s.userId)?.displayName || s.userId} ($${s.amount.toFixed(2)})`)
+          .join(', ')
+      );
+    }
+
+    return `Split among ${includedCount} members`;
   };
 
   const handleDeleteLog = async (logId: string) => {
@@ -592,39 +770,88 @@ export default function App() {
                   <div className="grid grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-12">
                     {/* Left Column: Expenses List (7 cols) */}
                     <div className="lg:col-span-7 rounded-xl border border-slate-200 bg-white overflow-hidden">
-                      <div className="border-b border-slate-200 px-4 sm:px-5 py-3.5 sm:py-4 flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <h2 className="text-sm font-semibold text-slate-900 truncate">
-                            {activeGroup.name} — Expenses
-                          </h2>
-                          <p className="text-xs text-slate-500 font-mono tabular-nums mt-0.5">
-                            Total spent: ${balanceData.totalGroupSpend.toFixed(2)}
-                          </p>
+                      <div className="border-b border-slate-200 px-4 sm:px-5 py-3.5 sm:py-4 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <h2 className="text-sm font-semibold text-slate-900 truncate">
+                              {activeGroup.name} — Expenses
+                            </h2>
+                            <p className="text-xs text-slate-500 font-mono tabular-nums mt-0.5">
+                              Total spent: ${balanceData.totalGroupSpend.toFixed(2)}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {groupExpenses.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={handleExportGroupCsv}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap"
+                                title="Export group expenses and balances to CSV"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Export CSV</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingExpense(null);
+                                setPrefillSettlement(null);
+                                setExpenseModalOpen(true);
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2.5 sm:py-2 text-xs font-medium text-white hover:bg-slate-800 whitespace-nowrap shrink-0"
+                            >
+                              <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                              <span>Add Expense</span>
+                            </button>
+                          </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingExpense(null);
-                            setPrefillSettlement(null);
-                            setExpenseModalOpen(true);
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2.5 sm:py-2 text-xs font-medium text-white hover:bg-slate-800 whitespace-nowrap shrink-0"
-                        >
-                          <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                          <span>Add Expense</span>
-                        </button>
+                        {groupExpenses.length > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            {(
+                              [
+                                { id: 'all', label: 'All' },
+                                { id: 'expenses', label: 'Expenses' },
+                                { id: 'settlements', label: 'Settlements' },
+                              ] as const
+                            ).map((tab) => (
+                              <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setExpenseFilter(tab.id)}
+                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                                  expenseFilter === tab.id
+                                    ? 'bg-slate-900 text-white'
+                                    : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                                }`}
+                              >
+                                {tab.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
-                      {groupExpenses.length === 0 ? (
+                      {filteredGroupExpenses.length === 0 ? (
                         <div className="p-10 text-center text-xs text-slate-500">
-                          No expenses logged in {activeGroup.name} yet.
+                          {groupExpenses.length === 0
+                            ? `No expenses logged in ${activeGroup.name} yet.`
+                            : `No ${expenseFilter} found in ${activeGroup.name}.`}
                         </div>
                       ) : (
                         <div className="divide-y divide-slate-200">
-                          {groupExpenses.map((exp) => {
+                          {filteredGroupExpenses.map((exp) => {
                             const payer = userMap.get(exp.paidByUserId);
                             const dt = formatExactDateTime(exp.updatedAt);
+                            const canModifyExpense =
+                              isAdmin ||
+                              exp.createdByUserId === currentUser.id ||
+                              exp.paidByUserId === currentUser.id;
+                            const splitSummaryText = formatExpenseSplitSummary(exp);
+
                             return (
                               <div
                                 key={exp.id}
@@ -645,14 +872,21 @@ export default function App() {
                                     <span className="font-mono">{exp.date}</span>
                                     <span className="font-mono text-slate-400">{dt.timePart}</span>
                                   </div>
+                                  <div className="text-[11px] text-slate-500">
+                                    {splitSummaryText}
+                                  </div>
                                 </div>
 
                                 <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                                  <span className="text-sm font-mono tabular-nums font-semibold text-slate-900 mr-1">
+                                  <span
+                                    className={`text-sm font-mono tabular-nums font-semibold mr-1 ${
+                                      exp.isSettlement ? 'text-emerald-700' : 'text-slate-900'
+                                    }`}
+                                  >
                                     ${exp.amount.toFixed(2)}
                                   </span>
 
-                                  {isAdmin && (
+                                  {canModifyExpense && (
                                     <>
                                       <button
                                         type="button"
@@ -761,17 +995,24 @@ export default function App() {
                                 key={u.id}
                                 className="px-4 sm:px-5 py-3 flex items-center justify-between text-xs"
                               >
-                                <span className="font-medium text-slate-900">{u.displayName}</span>
+                                <span className="font-medium text-slate-900">
+                                  {u.displayName}
+                                  {u.role === 'disabled' ? (
+                                    <span className="ml-1.5 text-[11px] font-normal text-slate-400">
+                                      (Disabled)
+                                    </span>
+                                  ) : null}
+                                </span>
                                 <span
                                   className={`font-mono tabular-nums font-semibold ${
-                                    net > 0.009
+                                    net > 0.004
                                       ? 'text-emerald-700'
-                                      : net < -0.009
+                                      : net < -0.004
                                       ? 'text-red-700'
                                       : 'text-slate-400'
                                   }`}
                                 >
-                                  {net > 0.009 ? '+' : net < -0.009 ? '-' : ''}$
+                                  {net > 0.004 ? '+' : net < -0.004 ? '-' : ''}$
                                   {Math.abs(net).toFixed(2)}
                                 </span>
                               </div>

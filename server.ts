@@ -263,6 +263,13 @@ async function startServer() {
       return;
     }
 
+    if (user.role === 'disabled') {
+      res.status(403).json({
+        error: 'This account is currently disabled. Please contact an administrator.',
+      });
+      return;
+    }
+
     // Successful login clears any prior failed attempts for this IP
     loginAttemptsByIp.delete(clientIp);
     res.json({ user });
@@ -436,7 +443,7 @@ async function startServer() {
     res.json({ deletedId: id });
   });
 
-  // Create new expense or settlement (allowed for authenticated members in the group and admins)
+  // Create new expense or settlement (allowed for authenticated active members in the group and admins)
   app.post('/api/expenses', (req, res) => {
     const {
       groupId,
@@ -453,6 +460,10 @@ async function startServer() {
     const actor = findUser(actorUserId);
     if (!actor) {
       res.status(401).json({ error: 'You must be logged in to add an expense.' });
+      return;
+    }
+    if (actor.role === 'disabled') {
+      res.status(403).json({ error: 'Disabled accounts cannot add expenses.' });
       return;
     }
 
@@ -538,14 +549,14 @@ async function startServer() {
     res.status(201).json({ expense: newExpense, log: logEntry });
   });
 
-  // Admin Only: Edit existing expense
+  // Edit existing expense (Admins can edit any expense; Members can edit their own submitted or paid expenses)
   app.put('/api/expenses/:id', (req, res) => {
     const { id } = req.params;
     const { title, amount, paidByUserId, date, splitMode, splits, actorUserId } = req.body || {};
 
     const actor = findUser(actorUserId);
-    if (!actor || actor.role !== 'admin') {
-      res.status(403).json({ error: 'Only admin accounts can edit existing expenses.' });
+    if (!actor || actor.role === 'disabled') {
+      res.status(403).json({ error: 'You must be logged in with an active account to edit expenses.' });
       return;
     }
 
@@ -556,6 +567,16 @@ async function startServer() {
     }
 
     const before = structuredClone(db.expenses[existingIndex]);
+    const isOwnExpense =
+      before.createdByUserId === actor.id || before.paidByUserId === actor.id;
+
+    if (actor.role !== 'admin' && !isOwnExpense) {
+      res.status(403).json({
+        error: 'You can only edit expenses that you submitted or paid for. Only admins can edit other people’s expenses.',
+      });
+      return;
+    }
+
     const nowIso = new Date().toISOString();
 
     const updatedAmount = amount !== undefined ? roundCents(Number(amount)) : before.amount;
@@ -643,14 +664,14 @@ async function startServer() {
     res.json({ expense: updated, log: logEntry });
   });
 
-  // Admin Only: Delete expense
+  // Delete expense (Admins can delete any expense; Members can delete their own submitted or paid expenses)
   app.delete('/api/expenses/:id', (req, res) => {
     const { id } = req.params;
     const actorUserId = (req.query.actorUserId as string) || req.body?.actorUserId;
     const actor = findUser(actorUserId);
 
-    if (!actor || actor.role !== 'admin') {
-      res.status(403).json({ error: 'Only admin accounts can delete expenses.' });
+    if (!actor || actor.role === 'disabled') {
+      res.status(403).json({ error: 'You must be logged in with an active account to delete expenses.' });
       return;
     }
 
@@ -661,6 +682,16 @@ async function startServer() {
     }
 
     const removed = structuredClone(db.expenses[existingIndex]);
+    const isOwnExpense =
+      removed.createdByUserId === actor.id || removed.paidByUserId === actor.id;
+
+    if (actor.role !== 'admin' && !isOwnExpense) {
+      res.status(403).json({
+        error: 'You can only delete expenses that you submitted or paid for. Only admins can delete other people’s expenses.',
+      });
+      return;
+    }
+
     const nowIso = new Date().toISOString();
 
     db.expenses.splice(existingIndex, 1);
@@ -748,12 +779,15 @@ async function startServer() {
 
     const colors = ['#0F172A', '#0369A1', '#047857', '#B45309', '#7C3AED', '#BE123C'];
     const nowIso = new Date().toISOString();
+    const resolvedRole =
+      role === 'admin' ? 'admin' : role === 'disabled' ? 'disabled' : 'member';
+
     const newUser: UserAccount = {
       id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
       username: cleanUsername,
       password: cleanPassword,
       displayName: cleanDisplayName,
-      role: role === 'admin' ? 'admin' : 'member',
+      role: resolvedRole,
       avatarColor: colors[db.users.length % colors.length],
       createdAt: nowIso,
       active: true,
@@ -805,7 +839,7 @@ async function startServer() {
     res.status(201).json({ user: newUser });
   });
 
-  // Admin: Update user (including groupIds assignment)
+  // Admin: Update user (including groupIds assignment and Disabled role)
   app.put('/api/users/:id', (req, res) => {
     const { id } = req.params;
     const { username, password, displayName, role, groupIds, actorUserId } = req.body || {};
@@ -839,10 +873,10 @@ async function startServer() {
       return;
     }
 
-    if (before.role === 'admin' && role === 'member') {
+    if (before.role === 'admin' && (role === 'member' || role === 'disabled')) {
       const adminCount = db.users.filter((u) => u.role === 'admin' && u.active).length;
       if (adminCount <= 1) {
-        res.status(400).json({ error: 'At least one admin account must remain.' });
+        res.status(400).json({ error: 'At least one active admin account must remain.' });
         return;
       }
     }
@@ -858,7 +892,10 @@ async function startServer() {
         password !== undefined && String(password).trim() !== ''
           ? String(password).trim()
           : before.password,
-      role: role === 'admin' || role === 'member' ? role : before.role,
+      role:
+        role === 'admin' || role === 'member' || role === 'disabled'
+          ? role
+          : before.role,
     };
 
     const changes: AuditLogChange[] = [];

@@ -300,6 +300,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 >
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
+                  <option value="disabled">Disabled</option>
                 </select>
               </div>
 
@@ -400,6 +401,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                           >
                             <option value="member">Member</option>
                             <option value="admin">Admin</option>
+                            <option value="disabled">Disabled</option>
                           </select>
                         </div>
                       </div>
@@ -429,8 +431,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             {u.displayName}
                             {isCurrent ? ' (You)' : ''}
                           </div>
-                          <div className="text-xs text-slate-500 font-mono mt-0.5">
-                            @{u.username} · {u.role === 'admin' ? 'Admin' : 'Member'}
+                          <div className="text-xs text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
+                            <span>@{u.username}</span>
+                            <span>·</span>
+                            <span
+                              className={
+                                u.role === 'disabled'
+                                  ? 'text-red-600 font-sans font-medium'
+                                  : u.role === 'admin'
+                                  ? 'text-slate-900 font-sans font-medium'
+                                  : 'font-sans'
+                              }
+                            >
+                              {u.role === 'admin'
+                                ? 'Admin'
+                                : u.role === 'disabled'
+                                ? 'Disabled'
+                                : 'Member'}
+                            </span>
                           </div>
                         </div>
 
@@ -604,9 +622,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                           >
                             <option value="member">Member</option>
                             <option value="admin">Admin</option>
+                            <option value="disabled">Disabled</option>
                           </select>
                         ) : u.role === 'admin' ? (
-                          'Admin'
+                          <span className="font-medium text-slate-900">Admin</span>
+                        ) : u.role === 'disabled' ? (
+                          <span className="font-medium text-red-600">Disabled</span>
                         ) : (
                           'Member'
                         )}

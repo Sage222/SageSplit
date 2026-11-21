@@ -1,0 +1,857 @@
+Activity Log
+Full history of additions, edits, and changes with date and time.
+
+
+Clear All Logs
+Edited "Settlement: MASO → MUNSTA" (Amount, Splits)
+2026-11-21
+13:05:22
+·
+DUG
+
+Amount:
+$75.71
+→
+$84.35
+Splits:
+MUNSTA: $75.71
+→
+MUNSTA: $84.35
+Recorded settlement of $0.27 paid by DUG in "PAUL M GROUP"
+2026-11-21
+12:50:05
+·
+DUG
+
+Group:
+PAUL M GROUP
+Amount:
+$0.27
+Paid By:
+DUG
+Splits:
+CHIEF: $0.27
+Recorded settlement of $2.50 paid by TFMH in "PAUL M GROUP"
+2026-11-21
+12:50:02
+·
+DUG
+
+Group:
+PAUL M GROUP
+Amount:
+$2.50
+Paid By:
+TFMH
+Splits:
+CHIEF: $2.50
+Recorded settlement of $0.21 paid by TFMH in "PAUL M GROUP"
+2026-11-21
+12:49:59
+·
+DUG
+
+Group:
+PAUL M GROUP
+Amount:
+$0.21
+Paid By:
+TFMH
+Splits:
+MUNSTA: $0.21
+Edited "Settlement: CRAWF → CHIEF" (Description, Splits)
+2026-11-21
+12:49:26
+·
+DUG
+
+Description:
+Settlement: CRAWF → DUG
+→
+Settlement: CRAWF → CHIEF
+Splits:
+DUG: $14.09
+→
+CHIEF: $14.09
+Edited "Settlement: CRAWF → DUG" (Description, Splits)
+2026-11-21
+12:48:22
+·
+DUG
+
+Description:
+Settlement: CRAWF → CHIEF
+→
+Settlement: CRAWF → DUG
+Splits:
+CHIEF: $14.09
+→
+DUG: $14.09
+Edited "Settlement: CRAWF → CHIEF" (Description, Splits)
+2026-11-21
+12:43:00
+·
+DUG
+
+Description:
+Settlement: CRAWF → DUG
+→
+Settlement: CRAWF → CHIEF
+Splits:
+DUG: $14.09
+→
+CHIEF: $14.09
+Edited "Settlement: TFMH → DUG" (Description, Amount, Splits)
+2026-11-21
+12:42:38
+·
+DUG
+
+Description:
+Settlement: TFMH → CHIEF
+→
+Settlement: TFMH → DUG
+Amount:
+$16.86
+→
+$23.00
+Splits:
+CHIEF: $16.86
+→
+DUG: $23.00
+Edited "Settlement: TFMH → MUNSTA" (Amount, Splits)
+2026-11-21
+12:42:18
+·
+DUG
+
+Amount:
+$60.94
+→
+$52.09
+Splits:
+MUNSTA: $60.94
+→
+MUNSTA: $52.09
+Recorded settlement of $16.86 paid by TFMH in "PAUL M GROUP"
+2026-11-21
+12:40:31
+·
+DUG
+
+Group:
+PAUL M GROUP
+Amount:
+$16.86
+Paid By:
+TFMH
+Splits:
+CHIEF: $16.86
+Recorded settlement of $60.94 paid by TFMH in "PAUL M GROUP"
+2026-11-21
+12:40:26
+·
+DUG
+
+Group:
+PAUL M GROUP
+Amount:
+$60.94
+Paid By:
+TFMH
+Splits:
+MUNSTA: $60.94
+Recorded settlement of $13.21 paid by STACKY in "PAUL M GROUP"
+2026-11-21
+12:34:30
+·
+DUG
+
+Group:
+PAUL M GROUP
+Amount:
+$13.21
+Paid By:
+STACKY
+Splits:
+AZZA: $13.21
+Deleted "Settlement: TFMH → MUNSTA" ($52.30)
+2026-11-21
+12:31:50
+·
+DUG
+
+Amount:
+$52.30
+→
+Deleted
+Edited "Settlement: MASO → MUNSTA" (Amount, Splits)
+2026-11-21
+12:16:31
+·
+DUG
+
+Amount:
+$84.35
+→
+$75.71
+Splits:
+MUNSTA: $84.35
+→
+MUNSTA: $75.71
+Edited "Settlement: CRAWF → DUG" (Description, Splits)
+2026-11-21
+12:16:10
+·
+DUG
+
+Description:
+Settlement: CRAWF → CHIEF
+→
+Settlement: CRAWF → DUG
+Splits:
+CHIEF: $14.09
+→
+DUG: $14.09
+Edited "Settlement: CRAWF → CHIEF" (Description, Splits)
+2026-11-21
+12:13:53
+·
+DUG
+
+Description:
+Settlement: CRAWF → DUG
+→
+Settlement: CRAWF → CHIEF
+Splits:
+DUG: $14.09
+→
+CHIEF: $14.09
+Edited "Settlement: CRAWF → DUG" (Description, Splits)
+2026-11-21
+12:12:15
+·
+DUG
+
+Description:
+Settlement: CRAWF → CHIEF
+→
+Settlement: CRAWF → DUG
+Splits:
+CHIEF: $14.09
+→
+DUG: $14.09
+Recorded settlement of $52.30 paid by TFMH in "PAUL M GROUP"
+2026-11-21
+12:11:58
+·
+TFMH
+
+Group:
+PAUL M GROUP
+Amount:
+$52.30
+Paid By:
+TFMH
+Splits:
+MUNSTA: $52.30
+Recorded settlement of $213.20 paid by TODDY in "PAUL M GROUP"
+2026-11-20
+08:02:50
+·
+TODDY
+
+Group:
+PAUL M GROUP
+Amount:
+$213.20
+Paid By:
+TODDY
+Splits:
+AIDO: $213.20
+Recorded settlement of $84.35 paid by MASO in "PAUL M GROUP"
+2026-11-19
+19:00:06
+·
+MASO
+
+Group:
+PAUL M GROUP
+Amount:
+$84.35
+Paid By:
+MASO
+Splits:
+MUNSTA: $84.35
+Recorded settlement of $171.33 paid by KNOB in "PAUL M GROUP"
+2026-11-19
+17:26:23
+·
+KNOB
+
+Group:
+PAUL M GROUP
+Amount:
+$171.33
+Paid By:
+KNOB
+Splits:
+AIDO: $171.33
+Recorded settlement of $194.84 paid by UASH in "PAUL M GROUP"
+2026-11-19
+15:07:33
+·
+UASH
+
+Group:
+PAUL M GROUP
+Amount:
+$194.84
+Paid By:
+UASH
+Splits:
+AIDO: $194.84
+Recorded settlement of $14.09 paid by CRAWF in "PAUL M GROUP"
+2026-11-19
+12:26:22
+·
+CRAWF
+
+Group:
+PAUL M GROUP
+Amount:
+$14.09
+Paid By:
+CRAWF
+Splits:
+CHIEF: $14.09
+Recorded settlement of $128.36 paid by DAV in "PAUL M GROUP"
+2026-11-19
+12:24:36
+·
+DAV
+
+Group:
+PAUL M GROUP
+Amount:
+$128.36
+Paid By:
+DAV
+Splits:
+DUG: $128.36
+Recorded settlement of $147.84 paid by CRAWF in "PAUL M GROUP"
+2026-11-19
+12:24:15
+·
+CRAWF
+
+Group:
+PAUL M GROUP
+Amount:
+$147.84
+Paid By:
+CRAWF
+Splits:
+AIDO: $147.84
+Recorded settlement of $22.66 paid by BASH in "PAUL M GROUP"
+2026-11-19
+10:23:42
+·
+BASH
+
+Group:
+PAUL M GROUP
+Amount:
+$22.66
+Paid By:
+BASH
+Splits:
+CHIEF: $22.66
+Recorded settlement of $23.51 paid by BASH in "PAUL M GROUP"
+2026-11-19
+10:21:54
+·
+BASH
+
+Group:
+PAUL M GROUP
+Amount:
+$23.51
+Paid By:
+BASH
+Splits:
+AZZA: $23.51
+Added "Groceries" ($13.50) paid by DUG in "PAUL M GROUP"
+2026-11-19
+09:19:11
+·
+DUG
+
+Group:
+PAUL M GROUP
+Amount:
+$13.50
+Paid By:
+DUG
+Splits:
+DAV: $0.80, GREY: $0.80, MUNSTA: $0.80, MASO: $0.80, KNOB: $0.80, CHIEF: $0.80, TFMH: $0.80, UASH: $0.79, AZZA: $0.79, CRAWF: $0.79, STACKY: $0.79, AIDO: $0.79, TODDY: $0.79, MATHO: $0.79, JJ: $0.79, DUG: $0.79, BASH: $0.79
+Edited "Ice cream/ sorbet" (Splits)
+2026-11-19
+09:17:05
+·
+DUG
+
+Splits:
+DAV: $2.24, GREY: $2.24, MUNSTA: $2.24, MASO: $2.24, KNOB: $2.24, CHIEF: $2.24, TFMH: $2.24, UASH: $2.24, AZZA: $2.24, CRAWF: $2.23, STACKY: $2.23, AIDO: $2.23, TODDY: $2.23, MATHO: $2.23, JJ: $2.23, DUG: $2.23, BASH: $2.23
+→
+DAV: $2.38, GREY: $2.38, MUNSTA: $2.38, MASO: $2.38, KNOB: $2.38, CHIEF: $2.38, TFMH: $2.38, AZZA: $2.38, CRAWF: $2.37, STACKY: $2.37, AIDO: $2.37, TODDY: $2.37, MATHO: $2.37, JJ: $2.37, DUG: $2.37, BASH: $2.37
+Edited "White wine" (Splits)
+2026-11-19
+09:16:13
+·
+DUG
+
+Splits:
+DAV: $11.77, GREY: $11.77, MUNSTA: $11.77, MASO: $11.77, KNOB: $11.77, CHIEF: $11.77, TFMH: $11.77, UASH: $11.77, AZZA: $11.76, CRAWF: $11.76, STACKY: $11.76, AIDO: $11.76, TODDY: $11.76, MATHO: $11.76, JJ: $11.76, DUG: $11.76, BASH: $11.76
+→
+DAV: $12.50, GREY: $12.50, MUNSTA: $12.50, MASO: $12.50, KNOB: $12.50, TFMH: $12.50, UASH: $12.50, AZZA: $12.50, CRAWF: $12.50, STACKY: $12.50, AIDO: $12.50, TODDY: $12.50, MATHO: $12.50, JJ: $12.50, DUG: $12.50, BASH: $12.50
+Edited "Papers" (Splits)
+2026-11-19
+09:15:44
+·
+DUG
+
+Splits:
+DAV: $0.79, GREY: $0.79, MUNSTA: $0.78, MASO: $0.78, KNOB: $0.78, CHIEF: $0.78, TFMH: $0.78, UASH: $0.78, AZZA: $0.78, CRAWF: $0.78, STACKY: $0.78, TODDY: $0.78, MATHO: $0.78, JJ: $0.78, DUG: $0.78, BASH: $0.78
+→
+DAV: $0.74, GREY: $0.74, MUNSTA: $0.74, MASO: $0.74, KNOB: $0.74, CHIEF: $0.74, TFMH: $0.74, UASH: $0.74, AZZA: $0.74, CRAWF: $0.73, STACKY: $0.73, TODDY: $0.73, MATHO: $0.73, JJ: $0.73, DUG: $0.73, BASH: $0.73, AIDO: $0.73
+Edited "Friday night bruulyunce" (Splits)
+2026-11-19
+09:15:08
+·
+DUG
+
+Splits:
+DAV: $2.48, GREY: $2.47, MUNSTA: $2.47, MASO: $2.47, KNOB: $2.47, CHIEF: $2.47, TFMH: $2.47, UASH: $2.47, AZZA: $2.47, CRAWF: $2.47, STACKY: $2.47, AIDO: $2.47, TODDY: $2.47, MATHO: $2.47, JJ: $2.47, DUG: $2.47, BASH: $2.47
+→
+DAV: $2.63, GREY: $2.63, MUNSTA: $2.63, MASO: $2.63, KNOB: $2.63, CHIEF: $2.63, TFMH: $2.63, AZZA: $2.63, CRAWF: $2.62, STACKY: $2.62, AIDO: $2.62, TODDY: $2.62, MATHO: $2.62, JJ: $2.62, DUG: $2.62, BASH: $2.62
+Edited "Fri salad" (Splits)
+2026-11-19
+09:14:44
+·
+DUG
+
+Splits:
+DAV: $2.95, GREY: $2.95, MUNSTA: $2.94, MASO: $2.94, KNOB: $2.94, CHIEF: $2.94, TFMH: $2.94, UASH: $2.94, AZZA: $2.94, CRAWF: $2.94, STACKY: $2.94, AIDO: $2.94, TODDY: $2.94, MATHO: $2.94, JJ: $2.94, DUG: $2.94, BASH: $2.94
+→
+DAV: $3.13, GREY: $3.13, MUNSTA: $3.13, MASO: $3.13, KNOB: $3.13, CHIEF: $3.13, TFMH: $3.13, AZZA: $3.13, CRAWF: $3.12, STACKY: $3.12, AIDO: $3.12, TODDY: $3.12, MATHO: $3.12, JJ: $3.12, DUG: $3.12, BASH: $3.12
+Edited "Sat dinner ++" (Splits)
+2026-11-19
+09:14:32
+·
+DUG
+
+Splits:
+DAV: $9.71, GREY: $9.71, MUNSTA: $9.71, MASO: $9.71, KNOB: $9.71, CHIEF: $9.71, TFMH: $9.71, UASH: $9.71, AZZA: $9.71, CRAWF: $9.71, STACKY: $9.70, AIDO: $9.70, TODDY: $9.70, MATHO: $9.70, JJ: $9.70, DUG: $9.70, BASH: $9.70
+→
+DAV: $10.32, GREY: $10.32, MUNSTA: $10.32, MASO: $10.32, KNOB: $10.31, CHIEF: $10.31, TFMH: $10.31, AZZA: $10.31, CRAWF: $10.31, STACKY: $10.31, AIDO: $10.31, TODDY: $10.31, MATHO: $10.31, JJ: $10.31, DUG: $10.31, BASH: $10.31
+Edited "Sunday Night Dinner" (Splits)
+2026-11-19
+09:14:14
+·
+DUG
+
+Splits:
+DAV: $27.92, GREY: $27.92, MUNSTA: $27.91, MASO: $27.91, KNOB: $27.91, CHIEF: $27.91, TFMH: $27.91, UASH: $27.91, AZZA: $27.91, CRAWF: $27.91, STACKY: $27.91, AIDO: $27.91, TODDY: $27.91, MATHO: $27.91, JJ: $27.91, DUG: $27.91, BASH: $27.91
+→
+DAV: $29.66, GREY: $29.66, MUNSTA: $29.66, MASO: $29.66, KNOB: $29.66, CHIEF: $29.66, TFMH: $29.66, UASH: $29.66, AZZA: $29.66, CRAWF: $29.65, STACKY: $29.65, AIDO: $29.65, TODDY: $29.65, MATHO: $29.65, DUG: $29.65, BASH: $29.65
+Edited "Taste of Chief food" (Splits)
+2026-11-19
+09:13:36
+·
+DUG
+
+Splits:
+Admin: $3.95, DAV: $3.95, GREY: $3.94, MUNSTA: $3.94, MASO: $3.94, KNOB: $3.94, CHIEF: $3.94, TFMH: $3.94, UASH: $3.94, AZZA: $3.94, CRAWF: $3.94, STACKY: $3.94, AIDO: $3.94, TODDY: $3.94, MATHO: $3.94, JJ: $3.94, DUG: $3.94, BASH: $3.94
+→
+DAV: $4.18, GREY: $4.18, MUNSTA: $4.18, MASO: $4.18, KNOB: $4.18, CHIEF: $4.17, TFMH: $4.17, UASH: $4.17, AZZA: $4.17, CRAWF: $4.17, STACKY: $4.17, AIDO: $4.17, TODDY: $4.17, MATHO: $4.17, JJ: $4.17, DUG: $4.17, BASH: $4.17
+Edited "Groceries" (Splits)
+2026-11-19
+09:13:17
+·
+DUG
+
+Splits:
+Admin: $0.86, DAV: $0.86, GREY: $0.86, MUNSTA: $0.86, MASO: $0.86, KNOB: $0.85, CHIEF: $0.85, TFMH: $0.85, UASH: $0.85, AZZA: $0.85, CRAWF: $0.85, STACKY: $0.85, AIDO: $0.85, TODDY: $0.85, MATHO: $0.85, JJ: $0.85, DUG: $0.85, BASH: $0.85
+→
+DAV: $0.91, GREY: $0.91, MUNSTA: $0.91, MASO: $0.91, KNOB: $0.91, CHIEF: $0.90, TFMH: $0.90, UASH: $0.90, AZZA: $0.90, CRAWF: $0.90, STACKY: $0.90, AIDO: $0.90, TODDY: $0.90, MATHO: $0.90, JJ: $0.90, DUG: $0.90, BASH: $0.90
+Edited "Fri salad" (Splits)
+2026-11-19
+09:12:58
+·
+DUG
+
+Splits:
+Admin: $2.78, DAV: $2.78, GREY: $2.78, MUNSTA: $2.78, MASO: $2.78, KNOB: $2.78, CHIEF: $2.78, TFMH: $2.78, UASH: $2.78, AZZA: $2.78, CRAWF: $2.78, STACKY: $2.78, AIDO: $2.78, TODDY: $2.78, MATHO: $2.77, JJ: $2.77, DUG: $2.77, BASH: $2.77
+→
+DAV: $2.95, GREY: $2.95, MUNSTA: $2.94, MASO: $2.94, KNOB: $2.94, CHIEF: $2.94, TFMH: $2.94, UASH: $2.94, AZZA: $2.94, CRAWF: $2.94, STACKY: $2.94, AIDO: $2.94, TODDY: $2.94, MATHO: $2.94, JJ: $2.94, DUG: $2.94, BASH: $2.94
+Edited "Seafood" (Splits)
+2026-11-19
+09:12:49
+·
+DUG
+
+Splits:
+Admin: $16.67, DAV: $16.67, GREY: $16.67, MUNSTA: $16.67, MASO: $16.67, KNOB: $16.67, CHIEF: $16.67, TFMH: $16.67, UASH: $16.67, AZZA: $16.67, CRAWF: $16.67, STACKY: $16.67, AIDO: $16.66, TODDY: $16.66, MATHO: $16.66, JJ: $16.66, DUG: $16.66, BASH: $16.66
+→
+DAV: $17.65, GREY: $17.65, MUNSTA: $17.65, MASO: $17.65, KNOB: $17.65, CHIEF: $17.65, TFMH: $17.65, UASH: $17.65, AZZA: $17.65, CRAWF: $17.65, STACKY: $17.65, AIDO: $17.65, TODDY: $17.64, MATHO: $17.64, JJ: $17.64, DUG: $17.64, BASH: $17.64
+Edited "Red wine" (Splits)
+2026-11-19
+09:12:39
+·
+DUG
+
+Splits:
+Admin: $57.67, DAV: $57.67, GREY: $57.67, MUNSTA: $57.67, MASO: $57.67, KNOB: $57.67, CHIEF: $57.67, TFMH: $57.67, UASH: $57.67, AZZA: $57.67, CRAWF: $57.67, STACKY: $57.67, AIDO: $57.66, TODDY: $57.66, MATHO: $57.66, JJ: $57.66, DUG: $57.66, BASH: $57.66
+→
+DAV: $64.88, GREY: $64.88, MUNSTA: $64.88, MASO: $64.88, KNOB: $64.88, TFMH: $64.88, UASH: $64.88, AZZA: $64.88, CRAWF: $64.87, STACKY: $64.87, AIDO: $64.87, TODDY: $64.87, MATHO: $64.87, JJ: $64.87, DUG: $64.87, BASH: $64.87
+Edited "Sat dinner ++" (Splits)
+2026-11-19
+09:12:28
+·
+DUG
+
+Splits:
+Admin: $9.17, DAV: $9.17, GREY: $9.17, MUNSTA: $9.17, MASO: $9.17, KNOB: $9.17, CHIEF: $9.17, TFMH: $9.17, UASH: $9.17, AZZA: $9.17, CRAWF: $9.17, STACKY: $9.17, AIDO: $9.16, TODDY: $9.16, MATHO: $9.16, JJ: $9.16, DUG: $9.16, BASH: $9.16
+→
+DAV: $9.71, GREY: $9.71, MUNSTA: $9.71, MASO: $9.71, KNOB: $9.71, CHIEF: $9.71, TFMH: $9.71, UASH: $9.71, AZZA: $9.71, CRAWF: $9.71, STACKY: $9.70, AIDO: $9.70, TODDY: $9.70, MATHO: $9.70, JJ: $9.70, DUG: $9.70, BASH: $9.70
+Edited "Fri dinner ingredients" (Splits)
+2026-11-19
+09:12:15
+·
+DUG
+
+Splits:
+Admin: $6.67, DAV: $6.67, GREY: $6.67, MUNSTA: $6.67, MASO: $6.67, KNOB: $6.67, CHIEF: $6.67, TFMH: $6.67, UASH: $6.67, AZZA: $6.67, CRAWF: $6.67, STACKY: $6.67, AIDO: $6.66, TODDY: $6.66, MATHO: $6.66, JJ: $6.66, DUG: $6.66, BASH: $6.66
+→
+DAV: $7.06, GREY: $7.06, MUNSTA: $7.06, MASO: $7.06, KNOB: $7.06, CHIEF: $7.06, TFMH: $7.06, UASH: $7.06, AZZA: $7.06, CRAWF: $7.06, STACKY: $7.06, AIDO: $7.06, TODDY: $7.06, MATHO: $7.06, JJ: $7.06, DUG: $7.05, BASH: $7.05
+Updated user Admin
+2026-11-19
+09:11:06
+·
+DUG
+
+Expense Groups:
+None
+→
+PAUL M GROUP
+Updated user DUG
+2026-11-19
+09:02:20
+·
+Admin
+
+Role:
+member
+→
+admin
+Added "Dinner Saturday night - meat and vegetables" ($250.00) paid by AZZA in "PAUL M GROUP"
+2026-11-18
+14:31:45
+·
+AZZA
+
+Group:
+PAUL M GROUP
+Amount:
+$250.00
+Paid By:
+AZZA
+Splits:
+DAV: $14.71, GREY: $14.71, MUNSTA: $14.71, MASO: $14.71, KNOB: $14.71, CHIEF: $14.71, TFMH: $14.71, UASH: $14.71, AZZA: $14.71, CRAWF: $14.71, STACKY: $14.70, AIDO: $14.70, TODDY: $14.70, JJ: $14.70, DUG: $14.70, BASH: $14.70, MATHO: $14.70
+Added "Ice cream/ sorbet" ($38.00) paid by GREY in "PAUL M GROUP"
+2026-11-18
+13:30:47
+·
+GREY
+
+Group:
+PAUL M GROUP
+Amount:
+$38.00
+Paid By:
+GREY
+Splits:
+DAV: $2.24, GREY: $2.24, MUNSTA: $2.24, MASO: $2.24, KNOB: $2.24, CHIEF: $2.24, TFMH: $2.24, UASH: $2.24, AZZA: $2.24, CRAWF: $2.23, STACKY: $2.23, AIDO: $2.23, TODDY: $2.23, MATHO: $2.23, JJ: $2.23, DUG: $2.23, BASH: $2.23
+Added "Friday night" ($129.00) paid by MASO in "PAUL M GROUP"
+2026-11-18
+07:31:51
+·
+MASO
+
+Group:
+PAUL M GROUP
+Amount:
+$129.00
+Paid By:
+MASO
+Splits:
+DAV: $7.59, GREY: $7.59, MUNSTA: $7.59, MASO: $7.59, KNOB: $7.59, CHIEF: $7.59, TFMH: $7.59, UASH: $7.59, AZZA: $7.59, CRAWF: $7.59, STACKY: $7.59, AIDO: $7.59, TODDY: $7.59, MATHO: $7.59, JJ: $7.58, DUG: $7.58, BASH: $7.58
+Added "White wine" ($200.00) paid by STACKY in "PAUL M GROUP"
+2026-11-17
+16:08:11
+·
+STACKY
+
+Group:
+PAUL M GROUP
+Amount:
+$200.00
+Paid By:
+STACKY
+Splits:
+DAV: $11.77, GREY: $11.77, MUNSTA: $11.77, MASO: $11.77, KNOB: $11.77, CHIEF: $11.77, TFMH: $11.77, UASH: $11.77, AZZA: $11.76, CRAWF: $11.76, STACKY: $11.76, AIDO: $11.76, TODDY: $11.76, MATHO: $11.76, JJ: $11.76, DUG: $11.76, BASH: $11.76
+Added "Dinner food" ($110.00) paid by TFMH in "PAUL M GROUP"
+2026-11-16
+12:06:12
+·
+TFMH
+
+Group:
+PAUL M GROUP
+Amount:
+$110.00
+Paid By:
+TFMH
+Splits:
+DAV: $6.48, GREY: $6.47, MUNSTA: $6.47, MASO: $6.47, KNOB: $6.47, CHIEF: $6.47, TFMH: $6.47, UASH: $6.47, AZZA: $6.47, CRAWF: $6.47, STACKY: $6.47, AIDO: $6.47, TODDY: $6.47, MATHO: $6.47, JJ: $6.47, DUG: $6.47, BASH: $6.47
+Added "Ice" ($13.00) paid by TFMH in "PAUL M GROUP"
+2026-11-16
+12:05:45
+·
+TFMH
+
+Group:
+PAUL M GROUP
+Amount:
+$13.00
+Paid By:
+TFMH
+Splits:
+DAV: $0.77, GREY: $0.77, MUNSTA: $0.77, MASO: $0.77, KNOB: $0.77, CHIEF: $0.77, TFMH: $0.77, UASH: $0.77, AZZA: $0.76, CRAWF: $0.76, STACKY: $0.76, AIDO: $0.76, TODDY: $0.76, MATHO: $0.76, JJ: $0.76, DUG: $0.76, BASH: $0.76
+Added "Papers" ($12.50) paid by TFMH in "PAUL M GROUP"
+2026-11-16
+12:04:17
+·
+TFMH
+
+Group:
+PAUL M GROUP
+Amount:
+$12.50
+Paid By:
+TFMH
+Splits:
+DAV: $0.79, GREY: $0.79, MUNSTA: $0.78, MASO: $0.78, KNOB: $0.78, CHIEF: $0.78, TFMH: $0.78, UASH: $0.78, AZZA: $0.78, CRAWF: $0.78, STACKY: $0.78, TODDY: $0.78, MATHO: $0.78, JJ: $0.78, DUG: $0.78, BASH: $0.78
+Added "staples2" ($87.76) paid by DUG in "PAUL M GROUP"
+2026-11-15
+16:56:02
+·
+DUG
+
+Group:
+PAUL M GROUP
+Amount:
+$87.76
+Paid By:
+DUG
+Splits:
+DAV: $5.17, GREY: $5.17, MUNSTA: $5.17, MASO: $5.17, KNOB: $5.16, CHIEF: $5.16, TFMH: $5.16, UASH: $5.16, AZZA: $5.16, CRAWF: $5.16, STACKY: $5.16, AIDO: $5.16, TODDY: $5.16, MATHO: $5.16, JJ: $5.16, DUG: $5.16, BASH: $5.16
+Added "Staples 1" ($193.00) paid by DUG in "PAUL M GROUP"
+2026-11-15
+16:55:14
+·
+DUG
+
+Group:
+PAUL M GROUP
+Amount:
+$193.00
+Paid By:
+DUG
+Splits:
+DAV: $11.36, GREY: $11.36, MUNSTA: $11.36, MASO: $11.36, KNOB: $11.36, CHIEF: $11.35, TFMH: $11.35, UASH: $11.35, AZZA: $11.35, CRAWF: $11.35, STACKY: $11.35, AIDO: $11.35, TODDY: $11.35, MATHO: $11.35, JJ: $11.35, DUG: $11.35, BASH: $11.35
+Added "Friday night bruulyunce" ($42.00) paid by KNOB in "PAUL M GROUP"
+2026-11-15
+16:42:57
+·
+KNOB
+
+Group:
+PAUL M GROUP
+Amount:
+$42.00
+Paid By:
+KNOB
+Splits:
+DAV: $2.48, GREY: $2.47, MUNSTA: $2.47, MASO: $2.47, KNOB: $2.47, CHIEF: $2.47, TFMH: $2.47, UASH: $2.47, AZZA: $2.47, CRAWF: $2.47, STACKY: $2.47, AIDO: $2.47, TODDY: $2.47, MATHO: $2.47, JJ: $2.47, DUG: $2.47, BASH: $2.47
+Updated user Admin
+2026-11-15
+16:11:11
+·
+Admin
+
+Expense Groups:
+PAUL M GROUP
+→
+None
+Added "Sunday Night Dinner" ($474.49) paid by AIDO in "PAUL M GROUP"
+2026-11-15
+15:54:50
+·
+AIDO
+
+Group:
+PAUL M GROUP
+Amount:
+$474.49
+Paid By:
+AIDO
+Splits:
+DAV: $27.92, GREY: $27.92, MUNSTA: $27.91, MASO: $27.91, KNOB: $27.91, CHIEF: $27.91, TFMH: $27.91, UASH: $27.91, AZZA: $27.91, CRAWF: $27.91, STACKY: $27.91, AIDO: $27.91, TODDY: $27.91, MATHO: $27.91, JJ: $27.91, DUG: $27.91, BASH: $27.91
+Added "Golf Sunday" ($105.00) paid by DUG in "PAUL M GROUP"
+2026-11-15
+15:41:55
+·
+DUG
+
+Group:
+PAUL M GROUP
+Amount:
+$105.00
+Paid By:
+DUG
+Splits:
+DAV: $35.00, CRAWF: $35.00, DUG: $35.00
+Added "Taste of Chief food" ($70.94) paid by CRAWF in "PAUL M GROUP"
+2026-11-15
+15:38:56
+·
+CRAWF
+
+Group:
+PAUL M GROUP
+Amount:
+$70.94
+Paid By:
+CRAWF
+Splits:
+Admin: $3.95, DAV: $3.95, GREY: $3.94, MUNSTA: $3.94, MASO: $3.94, KNOB: $3.94, CHIEF: $3.94, TFMH: $3.94, UASH: $3.94, AZZA: $3.94, CRAWF: $3.94, STACKY: $3.94, AIDO: $3.94, TODDY: $3.94, MATHO: $3.94, JJ: $3.94, DUG: $3.94, BASH: $3.94
+Added "Groceries" ($15.35) paid by CRAWF in "PAUL M GROUP"
+2026-11-15
+15:36:32
+·
+CRAWF
+
+Group:
+PAUL M GROUP
+Amount:
+$15.35
+Paid By:
+CRAWF
+Splits:
+Admin: $0.86, DAV: $0.86, GREY: $0.86, MUNSTA: $0.86, MASO: $0.86, KNOB: $0.85, CHIEF: $0.85, TFMH: $0.85, UASH: $0.85, AZZA: $0.85, CRAWF: $0.85, STACKY: $0.85, AIDO: $0.85, TODDY: $0.85, MATHO: $0.85, JJ: $0.85, DUG: $0.85, BASH: $0.85
+Added "Taste of Bash" ($167.00) paid by BASH in "PAUL M GROUP"
+2026-11-15
+12:50:01
+·
+BASH
+
+Group:
+PAUL M GROUP
+Amount:
+$167.00
+Paid By:
+BASH
+Splits:
+DAV: $10.44, GREY: $10.44, MUNSTA: $10.44, MASO: $10.44, KNOB: $10.44, TFMH: $10.44, UASH: $10.44, AZZA: $10.44, CRAWF: $10.44, STACKY: $10.44, AIDO: $10.44, TODDY: $10.44, MATHO: $10.43, JJ: $10.43, DUG: $10.43, BASH: $10.43
+Added "Fri salad" ($50.00) paid by MUNSTA in "PAUL M GROUP"
+2026-11-14
+14:33:17
+·
+MUNSTA
+
+Group:
+PAUL M GROUP
+Amount:
+$50.00
+Paid By:
+MUNSTA
+Splits:
+Admin: $2.78, DAV: $2.78, GREY: $2.78, MUNSTA: $2.78, MASO: $2.78, KNOB: $2.78, CHIEF: $2.78, TFMH: $2.78, UASH: $2.78, AZZA: $2.78, CRAWF: $2.78, STACKY: $2.78, AIDO: $2.78, TODDY: $2.78, MATHO: $2.77, JJ: $2.77, DUG: $2.77, BASH: $2.77
+Added "Seafood" ($300.00) paid by MUNSTA in "PAUL M GROUP"
+2026-11-14
+14:32:44
+·
+MUNSTA
+
+Group:
+PAUL M GROUP
+Amount:
+$300.00
+Paid By:
+MUNSTA
+Splits:
+Admin: $16.67, DAV: $16.67, GREY: $16.67, MUNSTA: $16.67, MASO: $16.67, KNOB: $16.67, CHIEF: $16.67, TFMH: $16.67, UASH: $16.67, AZZA: $16.67, CRAWF: $16.67, STACKY: $16.67, AIDO: $16.66, TODDY: $16.66, MATHO: $16.66, JJ: $16.66, DUG: $16.66, BASH: $16.66
+Added "Red wine" ($1038.00) paid by AIDO in "PAUL M GROUP"
+2026-11-14
+14:07:34
+·
+AIDO
+
+Group:
+PAUL M GROUP
+Amount:
+$1038.00
+Paid By:
+AIDO
+Splits:
+Admin: $57.67, DAV: $57.67, GREY: $57.67, MUNSTA: $57.67, MASO: $57.67, KNOB: $57.67, CHIEF: $57.67, TFMH: $57.67, UASH: $57.67, AZZA: $57.67, CRAWF: $57.67, STACKY: $57.67, AIDO: $57.66, TODDY: $57.66, MATHO: $57.66, JJ: $57.66, DUG: $57.66, BASH: $57.66
+Added "Sat dinner ++" ($165.00) paid by CHIEF in "PAUL M GROUP"
+2026-11-14
+12:11:31
+·
+CHIEF
+
+Group:
+PAUL M GROUP
+Amount:
+$165.00
+Paid By:
+CHIEF
+Splits:
+Admin: $9.17, DAV: $9.17, GREY: $9.17, MUNSTA: $9.17, MASO: $9.17, KNOB: $9.17, CHIEF: $9.17, TFMH: $9.17, UASH: $9.17, AZZA: $9.17, CRAWF: $9.17, STACKY: $9.17, AIDO: $9.16, TODDY: $9.16, MATHO: $9.16, JJ: $9.16, DUG: $9.16, BASH: $9.16
+Added "Fri dinner ingredients" ($120.00) paid by DAV in "PAUL M GROUP"
+2026-11-13
+21:47:18
+·
+DAV
+
+Group:
+PAUL M GROUP
+Amount:
+$120.00
+Paid By:
+DAV
+Splits:
+Admin: $6.67, DAV: $6.67, GREY: $6.67, MUNSTA: $6.67, MASO: $6.67, KNOB: $6.67, CHIEF: $6.67, TFMH: $6.67, UASH: $6.67, AZZA: $6.67, CRAWF: $6.67, STACKY: $6.67, AIDO: $6.66, TODDY: $6.66, MATHO: $6.66, JJ: $6.66, DUG: $6.66, BASH: $6.66
+Created expense group "PAUL M GROUP"
+2026-11-13
+11:27:49
+·
+Admin
+
+Group Name:
+PAUL M GROUP
+Members:
+Admin, DAV, GREY, MUNSTA, MASO, KNOB, CHIEF, TFMH, UASH, AZZA, CRAWF, STACKY, AIDO, TODDY, MATHO, JJ, DUG, BASH

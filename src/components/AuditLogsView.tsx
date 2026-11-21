@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Download } from 'lucide-react';
 import { AuditLogEntry } from '../types';
 
 interface AuditLogsViewProps {
@@ -30,6 +30,14 @@ export function formatExactDateTime(isoString: string): {
   };
 }
 
+function escapeCsvCell(value: string): string {
+  const clean = String(value ?? '').replace(/\r?\n/g, ' ');
+  if (clean.includes('"') || clean.includes(',') || clean.includes(';')) {
+    return `"${clean.replace(/"/g, '""')}"`;
+  }
+  return clean;
+}
+
 export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
   logs,
   isAdmin,
@@ -38,9 +46,61 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
 }) => {
   const [confirmClearAll, setConfirmClearAll] = useState(false);
 
+  const handleExportLogsCsv = () => {
+    if (logs.length === 0) return;
+
+    const headers = [
+      'Date',
+      'Time',
+      'Actor Name',
+      'Actor Username',
+      'Action',
+      'Target',
+      'Summary',
+      'Changes (Before -> After)',
+    ];
+
+    const rows = logs.map((log) => {
+      const dt = formatExactDateTime(log.timestamp);
+      const formattedChanges = log.changes
+        .map((c) =>
+          c.before !== '—'
+            ? `${c.field}: ${c.before} -> ${c.after}`
+            : `${c.field}: ${c.after}`
+        )
+        .join(' | ');
+
+      return [
+        dt.datePart,
+        dt.timePart,
+        log.actorName,
+        `@${log.actorUsername}`,
+        log.action,
+        log.targetTitle,
+        log.summary,
+        formattedChanges,
+      ]
+        .map(escapeCsvCell)
+        .join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.map(escapeCsvCell).join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const today = new Date().toISOString().split('T')[0];
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `sagesplit-activity-logs-${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <div className="border-b border-slate-200 px-5 py-4 flex items-center justify-between gap-4">
+      <div className="border-b border-slate-200 px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-slate-900">Activity Log</h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -48,37 +108,50 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
           </p>
         </div>
 
-        {isAdmin && logs.length > 0 && (
-          <div className="flex items-center gap-2 shrink-0">
-            {confirmClearAll ? (
+        {logs.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleExportLogsCsv}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Export CSV</span>
+            </button>
+
+            {isAdmin && (
               <>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await onClearAllLogs();
-                    setConfirmClearAll(false);
-                  }}
-                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 whitespace-nowrap"
-                >
-                  Confirm Clear All
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmClearAll(false)}
-                  className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50 whitespace-nowrap"
-                >
-                  Cancel
-                </button>
+                {confirmClearAll ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await onClearAllLogs();
+                        setConfirmClearAll(false);
+                      }}
+                      className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 whitespace-nowrap"
+                    >
+                      Confirm Clear All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmClearAll(false)}
+                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50 whitespace-nowrap"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClearAll(true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors whitespace-nowrap"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Clear All Logs</span>
+                  </button>
+                )}
               </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmClearAll(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors whitespace-nowrap"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                <span>Clear All Logs</span>
-              </button>
             )}
           </div>
         )}

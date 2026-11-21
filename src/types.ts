@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'member';
+export type UserRole = 'admin' | 'member' | 'disabled';
 
 export interface UserAccount {
   id: string;
@@ -103,15 +103,31 @@ export function roundCents(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-export function computeEqualSplits(totalAmount: number, participantUserIds: string[]): ExpenseSplit[] {
+export function computeEqualSplits(
+  totalAmount: number,
+  participantUserIds: string[],
+  rotationSeed = ''
+): ExpenseSplit[] {
   if (participantUserIds.length === 0) return [];
   const totalCents = Math.round(totalAmount * 100);
   const count = participantUserIds.length;
   const baseCents = Math.floor(totalCents / count);
   const remainderCents = totalCents - baseCents * count;
 
+  // Deterministically rotate who receives the extra +$0.01 remainder pennies
+  // so the first person in the list is not charged extra on every uneven expense
+  let offset = 0;
+  if (rotationSeed && count > 1) {
+    let hash = 0;
+    for (let i = 0; i < rotationSeed.length; i++) {
+      hash = (hash * 31 + rotationSeed.charCodeAt(i)) >>> 0;
+    }
+    offset = hash % count;
+  }
+
   return participantUserIds.map((userId, index) => {
-    const cents = baseCents + (index < remainderCents ? 1 : 0);
+    const rotatedRank = (index - offset + count) % count;
+    const cents = baseCents + (rotatedRank < remainderCents ? 1 : 0);
     return {
       userId,
       amount: cents / 100,
@@ -243,9 +259,9 @@ export function calculateRealTimeBalances(
 
   Object.values(summaries).forEach((s) => {
     const cents = Math.round(s.netBalance * 100);
-    if (cents < -1) {
+    if (cents < 0) {
       debtors.push({ userId: s.userId, cents: -cents });
-    } else if (cents > 1) {
+    } else if (cents > 0) {
       creditors.push({ userId: s.userId, cents });
     }
   });

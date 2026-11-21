@@ -80,7 +80,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         setSettlementReceiverId(editingExpense.splits[0].userId);
       }
 
-      const activeIds = editingExpense.splits.map((s) => s.userId);
+      const validGroupUserIds = new Set(users.map((u) => u.id));
+      const activeIds = editingExpense.splits
+        .map((s) => s.userId)
+        .filter((id) => validGroupUserIds.has(id));
       setSelectedUserIds(activeIds.length > 0 ? activeIds : users.map((u) => u.id));
 
       const initExact: Record<string, string> = {};
@@ -145,7 +148,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       return [{ userId: settlementReceiverId, amount: numericAmount }];
     }
     if (splitMode === 'equal') {
-      return computeEqualSplits(numericAmount, selectedUserIds);
+      const validGroupUserIds = new Set(users.map((u) => u.id));
+      const cleanSelectedIds = selectedUserIds.filter((id) => validGroupUserIds.has(id));
+      const seed = `${title.trim().toLowerCase()}|${paidByUserId}`;
+      return computeEqualSplits(numericAmount, cleanSelectedIds, seed);
     }
     if (splitMode === 'exact') {
       return users
@@ -172,6 +178,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     exactAmounts,
     percentages,
     users,
+    title,
+    paidByUserId,
   ]);
 
   const splitValidation = useMemo(() => {
